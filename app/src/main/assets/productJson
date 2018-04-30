@@ -1,0 +1,107 @@
+{"products": [
+  {
+    "id": 0,
+    "name": "Помидоры",
+    "count": 2000,
+    "calories": 140,
+    "thumbnail": "hgj"
+  },
+  {
+    "id": 1,
+    "name": "Огурцы",
+    "count": 1000,
+    "calories": 200,
+    "thumbnail": "sdfsdf"
+  },
+  {
+    "id": 2,
+    "name": "Помидоры",
+    "count": 2000,
+    "calories": 140,
+    "thumbnail": "hgj"
+  },
+  {
+    "id": 3,
+    "name": "Огурцы",
+    "count": 1000,
+    "calories": 200,
+    "thumbnail": "sdfsdf"
+  },
+  {
+    "id": 4,
+    "name": "Помидоры",
+    "count": 2000,
+    "calories": 140,
+    "thumbnail": "hgj"
+  },
+  {
+    "id": 5,
+    "name": "Огурцы",
+    "count": 1000,
+    "calories": 200,
+    "thumbnail": "sdfsdf"
+  },
+  {
+    "id": 6,
+    "name": "Помидоры",
+    "count": 2000,
+    "calories": 140,
+    "thumbnail": "hgj"
+  },
+  {
+    "id": 7,
+    "name": "Огурцы",
+    "count": 1000,
+    "calories": 200,
+    "thumbnail": "sdfsdf"
+  },
+  {
+    "id": 8,
+    "name": "Помидоры",
+    "count": 2000,
+    "calories": 140,
+    "thumbnail": "hgj"
+  },
+  {
+    "id": 9,
+    "name": "Огурцы",
+    "count": 1000,
+    "calories": 200,
+    "thumbnail": "sdfsdf"
+  },
+  {
+    "id": 8,
+    "name": "Помидоры",
+    "count": 2000,
+    "calories": 140,
+    "thumbnail": "hgj"
+  },
+  {
+    "id": 8,
+    "name": "Помидоры",
+    "count": 2000,
+    "calories": 140,
+    "thumbnail": "hgj"
+  },
+  {
+    "id": 8,
+    "name": "Помидоры",
+    "count": 2000,
+    "calories": 140,
+    "thumbnail": "hgj"
+  },
+  {
+    "id": 8,
+    "name": "Помидоры",
+    "count": 2000,
+    "calories": 140,
+    "thumbnail": "hgj"
+  },
+  {
+    "id": 8,
+    "name": "Помидоры",
+    "count": 2000,
+    "calories": 140,
+    "thumbnail": "hgj"
+  },]
+}
