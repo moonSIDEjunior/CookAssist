@@ -37,9 +37,6 @@ public interface ProductDao {
     @Query("UPDATE product_table SET product_calories = :calories WHERE product_name LIKE :name")
     void updateCalories(String name, String... calories);
 
-    @Query("UPDATE product_table SET product_id = :id")
-    void updateIds(Integer... id);
-
     @Delete
     void delete(Product... products);
 }

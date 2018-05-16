@@ -66,6 +66,7 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
     private Paint p = new Paint();
     private ProductDatabase db;
     private ProductDao productDao;
+    AsyncTasks asyncTask = new AsyncTasks(productDao);
     createAsyncTask CAT;
     addAsyncTask AAT;
     deleteAsyncTask DAT;
@@ -135,7 +136,7 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
                         buttonPos.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                final ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database")
+                                final ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
                                         .build();
                                 if (productCountInput.getText().toString().equals("") || productNameInput.getText().toString().equals("") || productCaloriesInput.getText().toString().equals("")) {
                                     if (productNameInput.getText().toString().equals("")) productNameInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
@@ -153,15 +154,15 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
 
 
                                     productDao = db.getProductDao();
-                                    AAT = new addAsyncTask(productDao);
-                                    final Product tempProduct = new Product().ProductAll(recyclerView.getAdapter().getItemCount(), newProductName,
+                                    AAT = new AsyncTasks(productDao);
+                                    final Product tempProduct = new Product().ProductAll(newProductName,
                                             Integer.valueOf(newProductCount),
                                             Integer.valueOf(newProductCalories));
                                     AAT.execute(tempProduct);
                                     Log.w("Product_add_id", tempProduct.getId().toString());
 
-
-                                    mAdapter.addItem(mAdapter.getItemCount(), new Product().ProductAll(recyclerView.getAdapter().getItemCount() - 1, newProductName,
+                                    Log.w("","");
+                                    mAdapter.addItem(mAdapter.getItemCount(), new Product().ProductAll(newProductName,
                                             Integer.valueOf(newProductCount),
                                             Integer.valueOf(newProductCalories)));
                                     recyclerView.setAdapter(mAdapter);
@@ -197,7 +198,7 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.favorite_fragment, container, false);
-                ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database")
+                ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
                 .build();
         List<Product> productList = new ArrayList<>();
         productDao = db.getProductDao();
@@ -259,6 +260,7 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
         return view;
     }
     private void initSwipe(){
+
         ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
@@ -269,11 +271,12 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
                 final int position = viewHolder.getAdapterPosition();
 
                 if (direction == ItemTouchHelper.LEFT){
-                    ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database")
+                    ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
                             .build();
                     DAT = new deleteAsyncTask(productDao);
                     DAT.execute(mAdapter.getField("name", position));
-                    final Product tempProduct = new Product().ProductAll(position, mAdapter.getField("name", position),
+
+                    final Product tempProduct = new Product().ProductAll(mAdapter.getField("name", position),
                             Integer.valueOf(mAdapter.getField("count", position)),
                             Integer.valueOf(mAdapter.getField("calories", position)));
                     mAdapter.removeItem(position);
@@ -282,10 +285,12 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
                     snackbar.setAction("ОТМЕНИТЬ", new View.OnClickListener(){
                         @Override
                         public void onClick(View view){
-                            mAdapter.addItem(position - 1, tempProduct);
-                            Log.w("Product_restore_id", tempProduct.getId().toString());
-                            AAT = new addAsyncTask(productDao);
-                            AAT.execute(tempProduct);
+//                            mAdapter.addItem(
+//                                    tempProductListSize,
+//                                    tempProduct);
+//                            Log.w("Product_restore_id", tempProduct.getId().toString());
+//                            AAT = new addAsyncTask(productDao);
+//                            AAT.execute(tempProduct);
                         }
                     });
                     View snackBarView = snackbar.getView();
@@ -350,7 +355,7 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
 
                                         UAT = new updateAsyncTask(productDao);
                                         UAT.execute(tempName, newProductName, newProductCount, newProductCalories);
-                                        mAdapter.replaceItem(position, new Product().ProductAll(recyclerView.getAdapter().getItemCount(), newProductName,
+                                        mAdapter.replaceItem(position, new Product().ProductAll(newProductName,
                                                 Integer.valueOf(newProductCount),
                                                 Integer.valueOf(newProductCalories)));
                                         dialog.dismiss();
@@ -409,159 +414,6 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
 
     private int convertDpToPx(int dp){
         return Math.round(dp*(getResources().getDisplayMetrics().xdpi/ DisplayMetrics.DENSITY_DEFAULT));
-
-    }
-
-    private static class insertAsyncTask extends AsyncTask<Product, Void, Void> {
-
-        private ProductDao mAsyncTaskDao;
-
-        insertAsyncTask(ProductDao dao) {
-            mAsyncTaskDao = dao;
-        }
-
-        @Override
-        protected Void doInBackground(Product... params) {
-            mAsyncTaskDao.insert(params[0]);
-            return null;
-        }
-
-    }
-
-    public void insert (Product product) {
-        new insertAsyncTask(productDao).execute(product);
-    }
-
-    private static class createAsyncTask extends AsyncTask<Void, Void, List<Product>> {
-
-        private ProductDao mAsyncTaskDao;
-
-        createAsyncTask(ProductDao dao) {
-            mAsyncTaskDao = dao;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-
-        @Override
-        protected List<Product> doInBackground(Void... voids) {
-            List<Product> productList;
-            productList = mAsyncTaskDao.getAll();
-            return productList;
-        }
-
-        @Override
-        protected void onPostExecute(List<Product> result) {
-            super.onPostExecute(result);
-        }
-
-    }
-
-    private static class addAsyncTask extends AsyncTask<Product, Void, Void> {
-
-        private ProductDao mAsyncTaskDao;
-
-        addAsyncTask(ProductDao dao) {
-            mAsyncTaskDao = dao;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-
-        @Override
-        protected Void doInBackground(Product... products) {
-            mAsyncTaskDao.insert(products);
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void result) {
-            super.onPostExecute(result);
-        }
-
-    }
-
-    private static class deleteAsyncTask extends AsyncTask<String , Void, Void> {
-
-        private ProductDao mAsyncTaskDao;
-
-        deleteAsyncTask(ProductDao dao) {
-            mAsyncTaskDao = dao;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-
-        @Override
-        protected Void doInBackground(String... name) {
-            mAsyncTaskDao.deleteByName(name);
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void result) {
-            super.onPostExecute(result);
-        }
-
-    }
-
-    private static class updateIdsAsyncTask extends AsyncTask< , Void, Void> {
-
-        private ProductDao mAsyncTaskDao;
-
-        updateIdsAsyncTask(ProductDao dao) {
-            mAsyncTaskDao = dao;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-
-        @Override
-        protected Void doInBackground(List<Product>... ids) {
-            mAsyncTaskDao.updateIds(ids.);
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void result) {
-            super.onPostExecute(result);
-        }
-
-    }
-
-    private static class updateAsyncTask extends AsyncTask<String, Void, Void> {
-
-        private ProductDao mAsyncTaskDao;
-
-        updateAsyncTask(ProductDao dao) {
-            mAsyncTaskDao = dao;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-
-        @Override
-        protected Void doInBackground(String... strings) {
-            mAsyncTaskDao.updateCount(strings[0], strings[2]);
-            mAsyncTaskDao.updateCalories(strings[0], strings[3]);
-            mAsyncTaskDao.updateName(strings[0], strings[1]);
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void result) {
-            super.onPostExecute(result);
-        }
 
     }
 

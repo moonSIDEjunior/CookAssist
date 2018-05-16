@@ -14,7 +14,7 @@ public class Product {
 
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "product_id")
-    private Integer id;
+    private Integer id = null;
 
     @ColumnInfo(name = "product_name")
     private String name;
@@ -29,8 +29,15 @@ public class Product {
 
     }
 
-    public Product ProductAll(Integer id, String name, Integer count, Integer calories) {
+    public Product ProductAllWithId(Integer id, String name, Integer count, Integer calories) {
         this.id = id;
+        this.name = name;
+        this.count = count;
+        this.calories = calories;
+        return this;
+    };
+
+    public Product ProductAll(String name, Integer count, Integer calories) {
         this.name = name;
         this.count = count;
         this.calories = calories;
@@ -42,7 +49,7 @@ public class Product {
     }
 
     public void setId(int   id){
-        this.id = id;
+        this.id = null;
     }
 
     public String getName() {
@@ -69,12 +76,6 @@ public class Product {
         this.calories = calories;
     }
 
-    public List<Integer> getIds(List<Product> products) {
-        List<Integer> temp = null;
-        for(int i = 0; i < products.size(); i++){
-            temp.add(products.getId)
-        }
-    }
 }
 
 

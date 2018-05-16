@@ -113,6 +113,13 @@ public class ProductListAdapter extends RecyclerView.Adapter<ProductListAdapter.
         notifyItemRangeChanged(position, productList.size());
     }
 
+    final public void addItemWithoutList(int position, Product product) {
+        productList.add(product);
+        notifyItemInserted(position);
+        notifyDataSetChanged();
+        notifyItemRangeChanged(position, position);
+    }
+
     public void restoreItem(Product product, int position){
         productList.add(product);
 
