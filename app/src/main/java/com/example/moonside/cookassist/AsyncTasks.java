@@ -8,11 +8,16 @@ import java.util.List;
 public class AsyncTasks {
     private ProductDao productDao;
 
+    createAsyncTask CAT;
+    addAsyncTask AAT;
+    deleteAsyncTask DAT;
+    updateAsyncTask UAT;
+
     public AsyncTasks(ProductDao productDao) {
         this.productDao = productDao;
     }
 
-    private static class insertAsyncTask extends AsyncTask<Product, Void, Void> {
+    static class insertAsyncTask extends AsyncTask<Product, Void, Void> {
 
         private ProductDao mAsyncTaskDao;
 
@@ -32,7 +37,7 @@ public class AsyncTasks {
         new insertAsyncTask(productDao).execute(product);
     }
 
-    private static class createAsyncTask extends AsyncTask<Void, Void, List<Product>> {
+    static class createAsyncTask extends AsyncTask<Void, Void, List<Product>> {
 
         private ProductDao mAsyncTaskDao;
 
@@ -59,7 +64,7 @@ public class AsyncTasks {
 
     }
 
-    private static class addAsyncTask extends AsyncTask<Product, Void, Void> {
+    static class addAsyncTask extends AsyncTask<Product, Void, Void> {
 
         private ProductDao mAsyncTaskDao;
 
@@ -86,7 +91,7 @@ public class AsyncTasks {
 
     }
 
-    private static class deleteAsyncTask extends AsyncTask<String , Void, Void> {
+    static class deleteAsyncTask extends AsyncTask<String , Void, Void> {
 
         private ProductDao mAsyncTaskDao;
 
@@ -112,7 +117,7 @@ public class AsyncTasks {
 
     }
 
-    private static class updateAsyncTask extends AsyncTask<String, Void, Void> {
+    static class updateAsyncTask extends AsyncTask<String, Void, Void> {
 
         private ProductDao mAsyncTaskDao;
 

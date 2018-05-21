@@ -6,19 +6,23 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by moonSIDE on 26.03.2018.
  */
 
-public class ProductListAdapter extends RecyclerView.Adapter<ProductListAdapter.MyViewHolder> {
+public class ProductListAdapter extends RecyclerView.Adapter<ProductListAdapter.MyViewHolder> implements Filterable {
     private Context context;
     private List<Product> productList;
+    private List<Product> productListFiltered;
 
     public interface ClickListener {
 
@@ -29,12 +33,12 @@ public class ProductListAdapter extends RecyclerView.Adapter<ProductListAdapter.
 
     private final ClickListener listener;
 
-    public class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener{
+    public class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
         public TextView name, count, calories;
         public ImageView delete_image, settings_image;
         public RelativeLayout viewBackground, viewForeground;
 
-        public MyViewHolder(View view){
+        public MyViewHolder(View view) {
             super(view);
             name = view.findViewById(R.id.name);
             count = view.findViewById(R.id.count);
@@ -50,7 +54,7 @@ public class ProductListAdapter extends RecyclerView.Adapter<ProductListAdapter.
 
         @Override
         public void onClick(View v) {
-            switch (v.getId()){
+            switch (v.getId()) {
                 case R.id.delete_button_bg:
                     Log.w("fdfsdfsdfds", "sdfsdfsdfds");
                     break;
@@ -66,14 +70,15 @@ public class ProductListAdapter extends RecyclerView.Adapter<ProductListAdapter.
         }
     }
 
-    public ProductListAdapter(Context context, List<Product> productList, ClickListener listener){
+    public ProductListAdapter(Context context, List<Product> productList, ClickListener listener) {
         this.context = context;
         this.productList = productList;
+        this.productListFiltered = productList;
         this.listener = listener;
     }
 
     @Override
-    public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType){
+    public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View productView = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.list_product, parent, false);
 
@@ -82,46 +87,79 @@ public class ProductListAdapter extends RecyclerView.Adapter<ProductListAdapter.
 
 
     @Override
-    public void onBindViewHolder(MyViewHolder holder, final int position){
-        MyApplication.getInstance();
-        MyApplication ms = null;
-        Product product = productList.get(position);
+    public void onBindViewHolder(MyViewHolder holder, final int position) {
+        final Product product = productListFiltered.get(position);
 //        final Product product = productList.get(position);
         holder.name.setText(product.getName());
         holder.count.setText("Количество: " + product.getCount().toString());
         holder.calories.setText("Калорийность: " + product.getCalories().toString());
     }
 
+    @Override
+    public Filter getFilter() {
+        return new Filter() {
+            @Override
+            protected FilterResults performFiltering(CharSequence charSequence) {
+                String charString = charSequence.toString();
+                if (charString.isEmpty()) {
+                    productListFiltered = productList;
+                } else {
+                    List<Product> filteredList = new ArrayList<>();
+                    for (Product row : productList) {
+
+                        // name match condition. this might differ depending on your requirement
+                        // here we are looking for name or phone number match
+                        if (row.getName().toLowerCase().contains(charString.toLowerCase())) {
+                            filteredList.add(row);
+                        }
+                    }
+
+                    productListFiltered = filteredList;
+                }
+
+                FilterResults filterResults = new FilterResults();
+                filterResults.values = productListFiltered;
+                return filterResults;
+            }
+
+            @Override
+            protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
+                productListFiltered = (ArrayList<Product>) filterResults.values;
+                notifyDataSetChanged();
+            }
+        };
+    }
+
     public void removeItem(int position) {
-        productList.remove(position);
+        productListFiltered.remove(position);
         notifyItemRemoved(position);
         notifyItemRangeChanged(position, productList.size());
     }
 
     public void replaceItem(int position, Product product){
-        productList.remove(position);
-        productList.add(product);
+        productListFiltered.remove(position);
+        productListFiltered.add(product);
         notifyItemInserted(position);
         notifyDataSetChanged();
-        notifyItemRangeChanged(position, productList.size());
+        notifyItemRangeChanged(position, productListFiltered.size());
     }
 
     public void addItem(int position, Product product) {
-        productList.add(product);
+        productListFiltered.add(product);
         notifyItemInserted(position);
         notifyDataSetChanged();
         notifyItemRangeChanged(position, productList.size());
     }
 
     final public void addItemWithoutList(int position, Product product) {
-        productList.add(product);
+        productListFiltered.add(product);
         notifyItemInserted(position);
         notifyDataSetChanged();
-        notifyItemRangeChanged(position, position);
+        notifyItemRangeChanged(position, position + 1);
     }
 
     public void restoreItem(Product product, int position){
-        productList.add(product);
+        productListFiltered.add(product);
 
     }
 
@@ -129,13 +167,13 @@ public class ProductListAdapter extends RecyclerView.Adapter<ProductListAdapter.
         String temp = "";
         switch (str) {
             case "name":
-                temp = productList.get(position).getName();
+                temp = productListFiltered.get(position).getName();
                 break;
             case "count":
-                temp = String.valueOf(productList.get(position).getCount());
+                temp = String.valueOf(productListFiltered.get(position).getCount());
                 break;
             case "calories":
-                temp =  String.valueOf(productList.get(position).getCalories());
+                temp =  String.valueOf(productListFiltered.get(position).getCalories());
                 break;
         }
         return temp;
@@ -143,8 +181,10 @@ public class ProductListAdapter extends RecyclerView.Adapter<ProductListAdapter.
 
     @Override
     public int getItemCount() {
-        return productList.size();
+        return productListFiltered.size();
     }
+
+
 }
 
 

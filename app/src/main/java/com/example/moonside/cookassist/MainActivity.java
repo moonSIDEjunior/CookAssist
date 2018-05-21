@@ -20,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ActionBar toolbar;
     private MenuItem navigateBar;
+    android.support.v4.app.Fragment fragment;
     private String textVar = "";
     public int height = 0;
     MyApplication ms;
@@ -59,13 +60,14 @@ public class MainActivity extends AppCompatActivity {
 //        layoutParams.setBehavior(new BottomNavigationBehavior());
 
 
-        android.support.v4.app.Fragment fragment = new ProductFragment();
-        loadFragment(fragment);
         textVar = "Рецепты";
         SpannableString text = new SpannableString(textVar);
         text.setSpan(new TypefaceSpan("assets/fonts/kiril.otf"), 0, text.length(),
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         appbar.setTitle(text);
+        fragment = new ProductFragment();
+        loadFragment(fragment);
+
     }
 //Создания пункта мемю в App Bar
 

@@ -13,5 +13,7 @@
     <string name="search">Search</string>
     <string name="add">Add</string>
     <string name="new_product">Новый продукт</string>
+    <string name="search_hint">Поиск</string>
+    <string name="action_search">Поиск</string>
 
 </resources>

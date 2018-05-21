@@ -67,10 +67,7 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
     private ProductDatabase db;
     private ProductDao productDao;
     AsyncTasks asyncTask = new AsyncTasks(productDao);
-    createAsyncTask CAT;
-    addAsyncTask AAT;
-    deleteAsyncTask DAT;
-    updateAsyncTask UAT;
+    
 
 
     //
@@ -101,7 +98,6 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
 //
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        // TODO Add your menu entries here
         inflater.inflate(R.menu.menu_main, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
@@ -154,12 +150,11 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
 
 
                                     productDao = db.getProductDao();
-                                    AAT = new AsyncTasks(productDao);
+                                    asyncTask.AAT = new AsyncTasks.addAsyncTask(productDao);
                                     final Product tempProduct = new Product().ProductAll(newProductName,
                                             Integer.valueOf(newProductCount),
                                             Integer.valueOf(newProductCalories));
-                                    AAT.execute(tempProduct);
-                                    Log.w("Product_add_id", tempProduct.getId().toString());
+                                    asyncTask.AAT.execute(tempProduct);
 
                                     Log.w("","");
                                     mAdapter.addItem(mAdapter.getItemCount(), new Product().ProductAll(newProductName,
@@ -202,10 +197,10 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
                 .build();
         List<Product> productList = new ArrayList<>();
         productDao = db.getProductDao();
-        CAT = new createAsyncTask(productDao);
-        CAT.execute();
+        asyncTask.CAT = new AsyncTasks.createAsyncTask(productDao);
+        asyncTask.CAT.execute();
         try {
-            productList = CAT.get();
+            productList = asyncTask.CAT.get();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
@@ -273,8 +268,8 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
                 if (direction == ItemTouchHelper.LEFT){
                     ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
                             .build();
-                    DAT = new deleteAsyncTask(productDao);
-                    DAT.execute(mAdapter.getField("name", position));
+                    asyncTask.DAT = new AsyncTasks.deleteAsyncTask(productDao);
+                    asyncTask.DAT.execute(mAdapter.getField("name", position));
 
                     final Product tempProduct = new Product().ProductAll(mAdapter.getField("name", position),
                             Integer.valueOf(mAdapter.getField("count", position)),
@@ -353,8 +348,8 @@ public class FavoriteFragment extends Fragment implements View.OnClickListener {
 //                                        newList[1] = newProductCount;
 //                                        newList[2] = newProductCalories;
 
-                                        UAT = new updateAsyncTask(productDao);
-                                        UAT.execute(tempName, newProductName, newProductCount, newProductCalories);
+                                        asyncTask.UAT = new AsyncTasks.updateAsyncTask(productDao);
+                                        asyncTask.UAT.execute(tempName, newProductName, newProductCount, newProductCalories);
                                         mAdapter.replaceItem(position, new Product().ProductAll(newProductName,
                                                 Integer.valueOf(newProductCount),
                                                 Integer.valueOf(newProductCalories)));

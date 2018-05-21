@@ -1,8 +1,9 @@
 package com.example.moonside.cookassist;
 
 import android.app.AlertDialog;
-import android.app.Application;
-import android.arch.lifecycle.LiveData;
+import android.app.SearchManager;
+import android.arch.persistence.room.Room;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -10,6 +11,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.CoordinatorLayout;
@@ -19,8 +21,10 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -32,14 +36,11 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import java.io.BufferedReader;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.concurrent.ExecutionException;
 
 //
 ///**
@@ -66,7 +67,14 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
     private View view;
     private boolean add = false;
     private Paint p = new Paint();
-    private LiveData<List<Product>> mAllProducts;
+    private ProductDatabase db;
+    private ProductDao productDao;
+    AsyncTasks asyncTask = new AsyncTasks(productDao);
+    private SearchView searchView;
+
+
+    //
+//
     public ProductFragment() {
 
     }
@@ -79,7 +87,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
         return fragment;
     }
     //
-    public void onCreate(Bundle savedInstanceState, Application application) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
 
@@ -93,10 +101,35 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
     //
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        // TODO Add your menu entries here
         inflater.inflate(R.menu.menu_main, menu);
-        super.onCreateOptionsMenu(menu, inflater);
+//        getActivity().getMenuInflater().inflate(R.menu.menu_main, menu);
+        // Associate searchable configuration with the SearchView
+        SearchManager searchManager = (SearchManager) getActivity().getSystemService(Context.SEARCH_SERVICE);
+        searchView = (SearchView) menu.findItem(R.id.search)
+                .getActionView();
+        searchView.setSearchableInfo(searchManager
+                .getSearchableInfo(getActivity().getComponentName()));
+        searchView.setMaxWidth(Integer.MAX_VALUE);
+
+        // listening to search query text change
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                // filter recycler view when query submitted
+                mAdapter.getFilter().filter(query);
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String query) {
+                // filter recycler view when text is changed
+                mAdapter.getFilter().filter(query);
+                return false;
+            }
+        });
+
     }
+
 
 
     @Override
@@ -127,6 +160,8 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
                         buttonPos.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
+                                final ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
+                                        .build();
                                 if (productCountInput.getText().toString().equals("") || productNameInput.getText().toString().equals("") || productCaloriesInput.getText().toString().equals("")) {
                                     if (productNameInput.getText().toString().equals("")) productNameInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
                                     else productNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
@@ -136,18 +171,26 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
                                     else productCaloriesInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
                                     errorTextShow.setText("Заполните подсвеченные поля!");
 
-
                                 } else {
                                     String newProductName = productNameInput.getText().toString();
                                     String newProductCount = productCountInput.getText().toString();
                                     String newProductCalories = productCaloriesInput.getText().toString();
 
-                                    Product product = new Product();
-                                    product.setName(newProductName);
-                                    product.setCount(Integer.valueOf(newProductCount));
-                                    product.setCalories(Integer.valueOf(newProductCalories));
 
+                                    productDao = db.getProductDao();
+                                    asyncTask.AAT = new AsyncTasks.addAsyncTask(productDao);
+                                    final Product tempProduct = new Product().ProductAll(newProductName,
+                                            Integer.valueOf(newProductCount),
+                                            Integer.valueOf(newProductCalories));
+                                    asyncTask.AAT.execute(tempProduct);
 
+                                    Log.w("","");
+                                    mAdapter.addItem(mAdapter.getItemCount(), new Product().ProductAll(newProductName,
+                                            Integer.valueOf(newProductCount),
+                                            Integer.valueOf(newProductCalories)));
+                                    recyclerView.setAdapter(mAdapter);
+                                    Log.w("mAdapter_count_add", String.valueOf(mAdapter.getItemCount()));
+                                    Log.w("recyclerView_count_add", String.valueOf(recyclerView.getAdapter().getItemCount()));
                                     dialog.dismiss();
                                 }
                             }
@@ -168,39 +211,32 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("ДОБАВИТЬ");
                 return true;
 
+            case R.id.search:
+                return true;
             default:
                 break;
         }
 
-        return false;
+        return super.onOptionsItemSelected(item);
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.product_fragment, container, false);
-        recyclerView = view.findViewById(R.id.recycler_view_product);
+        ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
+                .build();
         List<Product> productList = new ArrayList<>();
-
+        productDao = db.getProductDao();
+        asyncTask.CAT = new AsyncTasks.createAsyncTask(productDao);
+        asyncTask.CAT.execute();
         try {
-            InputStreamReader is = new InputStreamReader(getActivity().getAssets().open("product_db.csv"));
-            BufferedReader reader = new BufferedReader(is);
-            reader.readLine();
-            String line;
-            String[] st;
-            while ((line = reader.readLine()) != null) {
-                st = line.split(";");
-                Product product = new Product();
-                product.setId((Integer.valueOf(st[0])));
-                product.setName(st[1]);
-                product.setCount(Integer.valueOf(st[2]));
-                product.setCalories(Integer.valueOf(st[3]));
-                productList.add(product);
-            }
-        } catch (IOException e) {
+            productList = asyncTask.CAT.get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
             e.printStackTrace();
         }
-
+        recyclerView = view.findViewById(R.id.recycler_view_product);
         mAdapter = new ProductListAdapter(getActivity(), productList, new ProductListAdapter.ClickListener() {
             @Override
             public void onPositionClicked(int position) {
@@ -224,6 +260,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
         return view;
     }
     private void initSwipe(){
+
         ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
@@ -231,15 +268,28 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
             }
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-                int position = viewHolder.getAdapterPosition();
+                final int position = viewHolder.getAdapterPosition();
 
                 if (direction == ItemTouchHelper.LEFT){
-//                    adapter.removeItem(position);
-                    Snackbar snackbar = Snackbar.make(getActivity().findViewById(android.R.id.content), "Вы должны заполнить поля!", Snackbar.LENGTH_SHORT);
+                    ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
+                            .build();
+                    asyncTask.DAT = new AsyncTasks.deleteAsyncTask(productDao);
+                    asyncTask.DAT.execute(mAdapter.getField("name", position));
+
+                    final Product tempProduct = new Product().ProductAll(mAdapter.getField("name", position),
+                            Integer.valueOf(mAdapter.getField("count", position)),
+                            Integer.valueOf(mAdapter.getField("calories", position)));
+                    mAdapter.removeItem(position);
+
+                    Snackbar snackbar = Snackbar.make(getActivity().findViewById(android.R.id.content), "Продукт \"" + tempProduct.getName() + "\" удален!", Snackbar.LENGTH_SHORT);
                     snackbar.setAction("ОТМЕНИТЬ", new View.OnClickListener(){
                         @Override
                         public void onClick(View view){
-//                    mAdapter.restoreProduct(deletedProduct, deletedIndex);
+                            mAdapter.addItemWithoutList(
+                                    mAdapter.getItemCount(),
+                                    tempProduct);
+                            asyncTask.AAT = new AsyncTasks.addAsyncTask(productDao);
+                            asyncTask.AAT.execute(tempProduct);
                         }
                     });
                     View snackBarView = snackbar.getView();
@@ -250,7 +300,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
                     snackbar.setActionTextColor(Color.YELLOW);
                     snackbar.show();
                 } else {
-//                    removeView();
+                    mAdapter.notifyDataSetChanged();
                     LayoutInflater li = LayoutInflater.from(getActivity());
                     LayoutInflater inflater = getLayoutInflater();
                     View titleView = inflater.inflate(R.layout.alert_title, null);
@@ -270,6 +320,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
                     final TextView errorTextShow = (TextView) promptsView.findViewById(R.id.error_show);
 
                     productNameInput.setText(mAdapter.getField("name", position));
+                    final String tempName = productNameInput.getText().toString();
                     productCountInput.setText(mAdapter.getField("count", position));
                     productCaloriesInput.setText(mAdapter.getField("calories", position));
 
@@ -295,8 +346,17 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
                                         String newProductCount = productCountInput.getText().toString();
                                         String newProductCalories = productCaloriesInput.getText().toString();
 
+//                                        String newList[];
+//                                        newList = new String[2];
+//                                        newList[0] = newProductName;
+//                                        newList[1] = newProductCount;
+//                                        newList[2] = newProductCalories;
 
-
+                                        asyncTask.UAT = new AsyncTasks.updateAsyncTask(productDao);
+                                        asyncTask.UAT.execute(tempName, newProductName, newProductCount, newProductCalories);
+                                        mAdapter.replaceItem(position, new Product().ProductAll(newProductName,
+                                                Integer.valueOf(newProductCount),
+                                                Integer.valueOf(newProductCalories)));
                                         dialog.dismiss();
                                     }
                                 }
@@ -314,7 +374,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
                     dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.dialog_btn));
                     dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setText("ОТМЕНА");
                     dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.dialog_btn));
-                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("ДОБАВИТЬ");
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("СОХРАНИТЬ ИЗМЕНЕНИЯ");
                 }
             }
 
@@ -351,55 +411,18 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
         itemTouchHelper.attachToRecyclerView(recyclerView);
     }
 
-
     private int convertDpToPx(int dp){
         return Math.round(dp*(getResources().getDisplayMetrics().xdpi/ DisplayMetrics.DENSITY_DEFAULT));
 
     }
-//
-//
-////    @Override
-////    public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction, int position) {
-////        ImageButton delete_bg = (ImageButton) getActivity().findViewById(R.id.delete_button_bg);
-////        ImageButton settings_bg = (ImageButton) getActivity().findViewById(R.id.settings_button_bg);
-////        delete_bg.setOnClickListener(new View.OnClickListener() {
-////            @Override
-////            public void onClick(View v) {
-////                Toast.makeText(getActivity(),
-////                        "ImageButton is clicked!", Toast.LENGTH_SHORT).show();
-////            }
-////        });
-////        if (viewHolder instanceof ProductListAdapter.MyViewHolder){
-////            Log.w("fds", "dfsd");
-//////            Log.w("ProdLIst: ", productList.toString());
-////            Log.w("fds", "dfsd");
-//////            HashMap deletedProduct = productList.get(viewHolder.getAdapterPosition());
-//////            final int deletedIndex = viewHolder.getAdapterPosition();
-////
-////            mAdapter.removeProduct(viewHolder.getAdapterPosition());
-////
-////            Snackbar snackbar = Snackbar
-////                    .make(coordinatorLayout, "Продукт удален!", Snackbar.LENGTH_LONG);
-////            snackbar.setAction("ОТМЕНИТЬ", new View.OnClickListener(){
-////                @Override
-////                public void onClick(View view){
-//////                    mAdapter.restoreProduct(deletedProduct, deletedIndex);
-////                }
-////            });
-////
-////            View snackBarView = snackbar.getView();
-////            CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams)snackbar.getView().getLayoutParams();
-////            params.setMargins(0,0, 0, (int) convertDpToPx(56));
-////            snackBarView.setLayoutParams(params);
-////            snackbar.setActionTextColor(Color.YELLOW);
-////            snackbar.show();
-////        }
-////    }
-//
-//    private int convertDpToPx(int dp) {
-//        return Math.round(dp * (getResources().getDisplayMetrics().xdpi / DisplayMetrics.DENSITY_DEFAULT));
-//
-//    }
+
+
+    private void removeView(){
+        if(view.getParent()!=null) {
+            ((ViewGroup) view.getParent()).removeView(view);
+        }
+    }
+
 
 
 }
