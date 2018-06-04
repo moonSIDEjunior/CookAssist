@@ -59,7 +59,7 @@
             android:layout_height="wrap_content"
             android:layout_below="@+id/name"
             android:layout_marginTop="10dp"
-            android:layout_marginStart="100dp"
+            android:layout_marginStart="110dp"
             android:textColor="#5e4749"
             android:textSize="12dp"
             android:textStyle="bold"/>

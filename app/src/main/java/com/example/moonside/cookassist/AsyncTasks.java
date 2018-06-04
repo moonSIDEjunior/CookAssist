@@ -3,15 +3,22 @@ package com.example.moonside.cookassist;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class AsyncTasks {
     private ProductDao productDao;
-
     createAsyncTask CAT;
     addAsyncTask AAT;
     deleteAsyncTask DAT;
     updateAsyncTask UAT;
+    parseJSON PJS;
+
 
     public AsyncTasks(ProductDao productDao) {
         this.productDao = productDao;
@@ -140,6 +147,47 @@ public class AsyncTasks {
 
         @Override
         protected void onPostExecute(Void result) {
+            super.onPostExecute(result);
+        }
+
+    }
+
+    static class parseJSON extends AsyncTask<String , Void, ArrayList<String[]>> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected ArrayList<String[]> doInBackground(String... strings) {
+            ArrayList<String[]> productJson = new ArrayList<String[]>();
+            try {
+                JSONObject obj = new JSONObject(strings[0]);
+                JSONArray m_jArry = obj.getJSONArray("products");
+                String[] m_li;
+
+                for (int i = 0; i < m_jArry.length(); i++) {
+                    JSONObject jo_inside = m_jArry.getJSONObject(i);
+                    String product_name = jo_inside.getString("name");
+                    String product_calories = jo_inside.getString("calories");
+
+                    //Add your values in your `ArrayList` as below:
+                    m_li = new String[2];
+                    m_li[0] = product_name;
+                    m_li[1] = product_calories;
+
+                    productJson.add(m_li);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return productJson;
+        }
+
+
+        @Override
+        protected void onPostExecute(ArrayList<String[]> result) {
             super.onPostExecute(result);
         }
 

@@ -28,7 +28,6 @@ public class Product {
     Product(){
 
     }
-    ////afdfdsfdsf
 
     public Product ProductAllWithId(Integer id, String name, Integer count, Integer calories) {
         this.id = id;

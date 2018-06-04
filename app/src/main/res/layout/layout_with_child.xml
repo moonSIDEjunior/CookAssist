@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="1dp"
+    android:padding="16dp"
+    android:background="@color/md_white_1000"
+    >
+
+
+    <RelativeLayout
+        android:id="@+id/button"
+        android:gravity="center"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop ="true"
+        android:layout_width="48dp"
+        android:layout_height="48dp">
+
+        <View
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/ic_keyboard_arrow_up_black_24dp"/>
+
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/textView"
+        android:text="Bread"
+        android:padding="8dp"
+        android:textColor="@android:color/black"
+        android:textSize="20sp"
+        android:layout_alignParentTop="true"
+        android:layout_toLeftOf="@+id/button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <com.github.aakira.expandablelayout.ExpandableLinearLayout
+        android:id="@+id/expandableLayout"
+        android:layout_below="@+id/textView"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:ael_duration="400"
+        app:expanded="false"
+        app:ael_interpolator="bounce"
+        >
+
+        <TextView
+            android:id="@+id/textViewChild"
+            android:text="with Cheese"
+            android:padding="8dp"
+            android:textColor="@android:color/black"
+            android:textSize="18sp"
+            android:layout_alignParentTop="true"
+            android:layout_toLeftOf="@+id/button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:id="@+id/ChildDelete"
+            android:layout_width="100dp"
+            android:layout_height="30dp"
+            android:layout_marginBottom="0dp"
+            android:layout_marginStart="220dp"
+            android:background="@drawable/my_button_bg"
+            android:onClick="onClickChildDelete"
+            android:text="Delete"
+            android:textColor="#1c0c14"
+            android:textSize="12dp" />
+
+        <Button
+            android:id="@+id/ChildUpgrade"
+            android:layout_width="100dp"
+            android:layout_height="30dp"
+            android:layout_marginTop="-30dp"
+            android:layout_marginStart="40dp"
+            android:background="@drawable/my_button_bg"
+            android:onClick="onClickUpgrade"
+            android:text="Upgrade"
+            android:textColor="@color/md_black_1000"
+            android:textSize="12dp" />
+
+
+
+
+    </com.github.aakira.expandablelayout.ExpandableLinearLayout>
+
+
+</RelativeLayout>

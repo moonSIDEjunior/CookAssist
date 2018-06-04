@@ -25,21 +25,32 @@ import android.support.v7.widget.SearchView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 //
@@ -47,12 +58,12 @@ import java.util.concurrent.ExecutionException;
 // * Created by moonSIDE on 21.03.2018.
 // */
 //
-public class ProductFragment extends Fragment implements View.OnClickListener {
+public class ProductFragment extends Fragment implements View.OnClickListener, SearchView.OnQueryTextListener {
     private static final String TAG = ProductFragment.class.getSimpleName();
     private static final String URL = "https://raw.githubusercontent.com/moonSIDEjunior/CookAssistant/master/productJson.json";
     private static final String FILE_NAME = "C:\\Users\\moonSIDE\\AndroidStudioProjects\\CookAssist\\app\\src\\main\\assets\\productJson.json";
     private RecyclerView recyclerView;
-    private List<Product> productList;
+    List<Product> productList;
     private ProductListAdapter mAdapter;
     private CoordinatorLayout coordinatorLayout;
     private String direction = "";
@@ -71,6 +82,9 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
     private ProductDao productDao;
     AsyncTasks asyncTask = new AsyncTasks(productDao);
     private SearchView searchView;
+    ArrayList<String> autoCompleteList;
+    private SearchView addSearchView;
+    ArrayList<String[]> productJson;
 
 
     //
@@ -90,6 +104,38 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+
+        asyncTask.PJS = new AsyncTasks.parseJSON();
+        asyncTask.PJS.execute(loadJSONFromAsset());
+        try {
+            productJson = asyncTask.PJS.get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        Log.w("sdfdsf", productJson.get(3)[0]);
+//        try {
+//            JSONObject obj = new JSONObject(loadJSONFromAsset());
+//            JSONArray m_jArry = obj.getJSONArray("products");
+//            productJson = new ArrayList<HashMap<String, String >>();
+//            HashMap<String, String > m_li;
+//
+//            for (int i = 0; i < m_jArry.length(); i++) {
+//                JSONObject jo_inside = m_jArry.getJSONObject(i);
+//                String product_name = jo_inside.getString("name");
+//                String product_calories = jo_inside.getString("calories");
+//
+//                //Add your values in your `ArrayList` as below:
+//                m_li = new HashMap<String, String >();
+//                m_li.put("name", product_name);
+//                m_li.put("calories", product_calories);
+//
+//                productJson.add(m_li);
+//            }
+//        } catch (JSONException e) {
+//            e.printStackTrace();
+//        }
 
 
     }
@@ -147,16 +193,38 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
                         .setCustomTitle(titleView)
                         .create();
 
-                final EditText productNameInput = (EditText) promptsView.findViewById(R.id.product_name);
+                final AutoCompleteTextView productNameInput = (AutoCompleteTextView) promptsView.findViewById(R.id.product_name);
                 final EditText productCountInput = (EditText) promptsView.findViewById(R.id.product_count);
                 final EditText productCaloriesInput = (EditText) promptsView.findViewById(R.id.product_calories);
-                final TextView errorTextShow = (TextView) promptsView.findViewById(R.id.error_show);
+                autoCompleteList = new ArrayList<String>();
+
+                for (String[] temp : productJson) {
+                    autoCompleteList.add(temp[0]);
+                }
+
+                productNameInput.setAdapter(new ArrayAdapter(getActivity(),
+                        android.R.layout.simple_dropdown_item_1line, autoCompleteList));
+
+                productNameInput.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+                        String tempName = productNameInput.getText().toString();
+                        String tempCalorie = null;
+                        for (String[] temp : productJson) {
+                            if (temp[0].equals(tempName)) {
+                                tempCalorie = temp[1];
+                                break;
+                            }
+                        }
+                        productCaloriesInput.setText(tempCalorie);
+                    }
+                });
 
                 dialog.setOnShowListener(new DialogInterface.OnShowListener() {
                     @Override
                     public void onShow(final DialogInterface dialog) {
                         Button buttonPos = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
                         Button buttonNeg = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_NEGATIVE);
+                        final TextView errorTextShow = (TextView) promptsView.findViewById(R.id.error_show);
                         buttonPos.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
@@ -175,7 +243,6 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
                                     String newProductName = productNameInput.getText().toString();
                                     String newProductCount = productCountInput.getText().toString();
                                     String newProductCalories = productCaloriesInput.getText().toString();
-
 
                                     productDao = db.getProductDao();
                                     asyncTask.AAT = new AsyncTasks.addAsyncTask(productDao);
@@ -225,7 +292,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
         View view = inflater.inflate(R.layout.product_fragment, container, false);
         ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
                 .build();
-        List<Product> productList = new ArrayList<>();
+//        List<Product> productList = new ArrayList<>();
         productDao = db.getProductDao();
         asyncTask.CAT = new AsyncTasks.createAsyncTask(productDao);
         asyncTask.CAT.execute();
@@ -293,7 +360,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
                         }
                     });
                     View snackBarView = snackbar.getView();
-                    Snackbar.SnackbarLayout.LayoutParams params = (Snackbar.SnackbarLayout.LayoutParams)snackBarView.getLayoutParams();
+                    Snackbar.SnackbarLayout.LayoutParams params = (Snackbar.SnackbarLayout.LayoutParams) snackBarView.getLayoutParams();
                     params.setMargins(0,0, 0, (int) convertDpToPx(56));
                     snackBarView.setLayoutParams(params);
                     snackBarView.setElevation(0f);
@@ -314,7 +381,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
                             .setCustomTitle(titleView)
                             .create();
 
-                    final EditText productNameInput = (EditText) promptsView.findViewById(R.id.product_name);
+                    final AutoCompleteTextView productNameInput = (AutoCompleteTextView) promptsView.findViewById(R.id.product_name);
                     final EditText productCountInput = (EditText) promptsView.findViewById(R.id.product_count);
                     final EditText productCaloriesInput = (EditText) promptsView.findViewById(R.id.product_calories);
                     final TextView errorTextShow = (TextView) promptsView.findViewById(R.id.error_show);
@@ -323,6 +390,25 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
                     final String tempName = productNameInput.getText().toString();
                     productCountInput.setText(mAdapter.getField("count", position));
                     productCaloriesInput.setText(mAdapter.getField("calories", position));
+
+                    productNameInput.setAdapter(new ArrayAdapter(getActivity(),
+                            android.R.layout.simple_dropdown_item_1line, autoCompleteList));
+
+                    productNameInput.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+                            String tempName = productNameInput.getText().toString();
+                            String tempCalorie = null;
+                            for (String[] temp : productJson) {
+                                if (temp[0].equals(tempName)) {
+                                    tempCalorie = temp[1];
+                                    break;
+                                }
+                            }
+                            productCaloriesInput.setText(tempCalorie);
+                        }
+                    });
+
+
 
                     dialog.setOnShowListener(new DialogInterface.OnShowListener() {
                         @Override
@@ -424,6 +510,34 @@ public class ProductFragment extends Fragment implements View.OnClickListener {
     }
 
 
+    @Override
+    public boolean onQueryTextSubmit(String query) {
+        return false;
+    }
 
+    @Override
+    public boolean onQueryTextChange(String newText) {
+        return false;
+    }
+
+    protected boolean isAlwaysExpanded() {
+        return true;
+    }
+
+    public String loadJSONFromAsset() {
+        String json = null;
+        try {
+            InputStream is = getActivity().getAssets().open("productCaloriesList");
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            json = new String(buffer, "UTF-8");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return null;
+        }
+        return json;
+    }
 }
 //

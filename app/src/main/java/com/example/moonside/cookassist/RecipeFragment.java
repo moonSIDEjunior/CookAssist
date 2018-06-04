@@ -1,192 +1,285 @@
 package com.example.moonside.cookassist;
 
-import android.content.Context;
-import android.content.res.Resources;
-import android.graphics.Rect;
+
+import android.app.AlertDialog;
+import android.arch.persistence.room.Room;
+import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonArrayRequest;
-import com.bumptech.glide.Glide;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import org.json.JSONArray;
-
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
-/**
- * Created by moonSIDE on 21.03.2018.
- */
+public class RecipeFragment extends Fragment implements View.OnClickListener {
 
+    private Button AddBn, Delete, Upgrade, AddButton;
+    private TextView mTextMessage, error;
+    private EditText recipeName, productName, productCount;
+    public static RecipeDatabase myAppDatabase;
+    public static android.support.v4.app.FragmentManager fragmentManager;
+    private RecipeDao myDao;
+    private AsyncTasksForRecipes asyncTasks = new AsyncTasksForRecipes(myDao);
+    private boolean z = false;
+    private boolean b = false;
+    private String textVar = "";
+    public String products = "";
+    private List<Recipe> recipes;
+    private MyAdapter adapter;
 
+    RecyclerView list;
+    RecyclerView.LayoutManager layoutManager;
 
-public class RecipeFragment extends Fragment {
-    private static final String TAG = RecipeFragment.class.getSimpleName();
-    private static final String URL = "https://api.androidhive.info/json/movies_2017.json";
-
-    private RecyclerView recyclerView;
-    private List<Recipes> recipesList;
-    private StoreAdapter mAdapter;
-
-    public RecipeFragment(){
+    public RecipeFragment() {
 
     }
 
-    public static RecipeFragment newInstance(){
+    @Override
+    public void onClick(View v) {
+
+    }
+
+    public static RecipeFragment newInstance() throws FileNotFoundException {
         RecipeFragment fragment = new RecipeFragment();
         Bundle args = new Bundle();
         fragment.setArguments(args);
         return fragment;
     }
 
-    public void onCreate(Bundle savedInstanceState){
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+
+
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_main, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.add:
+                LayoutInflater li = LayoutInflater.from(getActivity());
+                View promptsView = li.inflate(R.layout.addrecipe, null);
+                products = "";
+
+                final AlertDialog.Builder mDialogBuilder = new AlertDialog.Builder(getActivity());
+
+                mDialogBuilder.setView(promptsView);
+                final EditText recipeNameInput = (EditText) promptsView.findViewById(R.id.input_recipe_name);
+                final EditText productNameInput = promptsView.findViewById(R.id.input_product_name);
+                final EditText productCountInput = promptsView.findViewById(R.id.input_product_count);
+                final TextView error = promptsView.findViewById(R.id.error_show);
+
+                mDialogBuilder
+                        .setCancelable(false)
+                        .setNeutralButton("Cancel", null)
+                        .setPositiveButton("+", null)
+                        .setNegativeButton("Add", null);
+
+
+                final AlertDialog alertDialog = mDialogBuilder.create();
+                alertDialog.show();
+                alertDialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        String productname = productNameInput.getText().toString();
+                        String productcount = productCountInput.getText().toString();
+                        if (productname.equals("")) {
+                            productNameInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
+                            error.setText(R.string.enter_product_name);
+                        } else {
+                            {
+                                productNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                if (productcount.equals("")) {
+                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
+                                    error.setText(R.string.enter_product_count);
+                                } else {
+                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    products += productname + ": " + productcount + "\n";
+
+                                    productNameInput.setText("");
+                                    productCountInput.setText("");
+
+                                    Toast.makeText(getActivity(), "Product " + productname + " added successfully", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        }
+                    }
+                });
+
+                alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        final RecipeDatabase db = Room.databaseBuilder(getContext(), RecipeDatabase.class, "RecipeDB_V0.1")
+                                .build();
+                        String recipename = recipeNameInput.getText().toString();
+                        if (recipename.equals("")) {
+                            recipeNameInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
+                            error.setText(R.string.enter_recipe_name);
+                        } else {
+                            recipeNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                            if (products.equals("")) {
+                                if (!productNameInput.getText().toString().equals("") & productCountInput.getText().toString().equals("")) {
+                                    productNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
+                                    error.setText(R.string.enter_product_count);
+                                } else if (productNameInput.getText().toString().equals("") & !productCountInput.getText().toString().equals("")) {
+                                    productNameInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
+                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    error.setText(R.string.enter_product_name);
+                                } else if (!productNameInput.getText().toString().equals("") & !productCountInput.getText().toString().equals("")) {
+                                    products += productNameInput.getText().toString() + ": " + productCountInput.getText().toString();
+                                    Recipe recipe = new Recipe(recipename, products);
+
+                                    myDao = db.myDao();
+                                    asyncTasks.AAT = new AsyncTasksForRecipes.addAsyncTask(myDao);
+                                    asyncTasks.AAT.execute(recipe);
+                                    adapter.addRecipe(adapter.getItemCount(), recipe);
+                                    list.setAdapter(adapter);
+
+                                    Toast.makeText(getActivity(), "" + recipename + " added successfully", Toast.LENGTH_SHORT).show();
+                                    error.setText("");
+
+                                    recipeNameInput.setText("");
+                                    productNameInput.setText("");
+                                    productCountInput.setText("");
+                                    recipeNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    productNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    products = "";
+                                } else {
+                                    productNameInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
+                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
+                                    error.setText(R.string.enter_products);
+                                }
+                            } else {
+                                if (!productNameInput.getText().toString().equals("") & productCountInput.getText().toString().equals("")) {
+                                    productNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
+                                    error.setText(R.string.enter_product_count);
+                                } else if (productNameInput.getText().toString().equals("") & !productCountInput.getText().toString().equals("")) {
+                                    productNameInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
+                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    error.setText(R.string.enter_product_name);
+                                } else if (!productNameInput.getText().toString().equals("") & !productCountInput.getText().toString().equals("")) {
+                                    products += productNameInput.getText().toString() + ": " + productCountInput.getText().toString();
+                                    Recipe recipe = new Recipe(recipename, products);
+
+                                    myDao = db.myDao();
+                                    asyncTasks.AAT = new AsyncTasksForRecipes.addAsyncTask(myDao);
+                                    asyncTasks.AAT.execute(recipe);
+                                    adapter.addRecipe(adapter.getItemCount(), recipe);
+                                    list.setAdapter(adapter);
+
+                                    Toast.makeText(getActivity(), "" + recipename + " added successfully", Toast.LENGTH_SHORT).show();
+                                    error.setText("");
+
+                                    recipeNameInput.setText("");
+                                    productNameInput.setText("");
+                                    productCountInput.setText("");
+                                    recipeNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    productNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    products = "";
+                                } else {
+                                    Recipe recipe = new Recipe(recipename, products);
+
+                                    myDao = db.myDao();
+                                    asyncTasks.AAT = new AsyncTasksForRecipes.addAsyncTask(myDao);
+                                    asyncTasks.AAT.execute(recipe);
+                                    adapter.addRecipe(adapter.getItemCount(), recipe);
+                                    list.setAdapter(adapter);
+
+                                    Toast.makeText(getActivity(), "" + recipename + " added successfully", Toast.LENGTH_SHORT).show();
+                                    error.setText("");
+
+                                    recipeNameInput.setText("");
+                                    productNameInput.setText("");
+                                    productCountInput.setText("");
+                                    recipeNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    productNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    products = "";
+                                }
+                            }
+                        }
+                    }
+                });
+//mda
+                alertDialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        alertDialog.cancel();
+                    }
+                });
+                return true;
+
+            default:
+                break;
+        }
+
+        return false;
+    }
+
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.recipe_fragment, container, false);
 
-        recyclerView = view.findViewById(R.id.recycler_view);
-        recipesList = new ArrayList<>();
-        mAdapter = new StoreAdapter(getActivity(), recipesList);
+        mTextMessage = (TextView) view.findViewById(R.id.message);
+        BottomNavigationView navigation = (BottomNavigationView) view.findViewById(R.id.navigation);
 
-        RecyclerView.LayoutManager mLayoutManager = new GridLayoutManager(getActivity(), 3);
-        recyclerView.setLayoutManager(mLayoutManager);
-        recyclerView.addItemDecoration(new GridSpacingItemDecoration(2, dpToPx(8), true));
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
-        recyclerView.setAdapter(mAdapter);
-        recyclerView.setNestedScrollingEnabled(false);
+        AddBn = (Button) view.findViewById(R.id.Add);
+        list = (RecyclerView) view.findViewById(R.id.recycler);
 
-        fetchRecipesItems();
+        list.setHasFixedSize(true);
+        layoutManager = new LinearLayoutManager(getActivity());
+        list.setLayoutManager(layoutManager);
+
+        myAppDatabase = Room.databaseBuilder(getContext(), RecipeDatabase.class, "RecipeDB_V0.1")
+                .allowMainThreadQueries()
+                .build();
+
+        recipes = RecipeFragment.myAppDatabase.myDao().getRecipes();
+
+        final RecipeDatabase db = Room.databaseBuilder(getContext(), RecipeDatabase.class, "RecipeDB_V0.1")
+                .build();
+        List<Recipe> recipes = new ArrayList<>();
+        myDao = db.myDao();
+        asyncTasks.CAT = new AsyncTasksForRecipes.createAsyncTask(myDao);
+        asyncTasks.CAT.execute();
+        try {
+            recipes = asyncTasks.CAT.get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        adapter = new MyAdapter(recipes);
+
+        list.setAdapter(adapter);
 
         return view;
     }
-//
-    private void fetchRecipesItems(){
-        JsonArrayRequest request = new JsonArrayRequest(URL, new Response.Listener<JSONArray>() {
-            @Override
-            public void onResponse(JSONArray response) {
-                if (response == null) {
-                    Toast.makeText(getActivity(), "No!", Toast.LENGTH_LONG).show();
-                    return;
-                }
 
-                List<Recipes> items = new Gson().fromJson(response.toString(), new TypeToken<List<Recipes>>() {
-                }.getType());
-
-                recipesList.clear();
-                recipesList.addAll(items);
-
-                mAdapter.notifyDataSetChanged();
-            }
-        }, new Response.ErrorListener(){
-            @Override
-            public void onErrorResponse(VolleyError error){
-                Log.e(TAG, "Error: " + error.getMessage());
-                Toast.makeText(getActivity(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-        MyApplication.getInstance().addToRequestQueue(request);
-    }
-
-    public class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {
-        private int spanPrice;
-        private int spacing;
-        private boolean includeEdge;
-
-        public GridSpacingItemDecoration(int spanPrice, int spacing, boolean includeEdge) {
-            this.spanPrice = spanPrice;
-            this.spacing = spacing;
-            this.includeEdge = includeEdge;
-        }
-
-        @Override
-        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
-            int position = parent.getChildAdapterPosition(view);
-            int column = position % spanPrice;
-
-            if (includeEdge){
-                outRect.left = spacing - column * spacing / spanPrice;
-                outRect.right = (column) * spacing / spanPrice;
-
-                if (position < spanPrice){
-                    outRect.top = spacing;
-                }
-                outRect.bottom = spacing;
-            } else{
-                outRect.left = column * spacing / spanPrice;
-                outRect.right = spacing - (column + 1) * spacing / spanPrice;
-                if (position >= spanPrice){
-                    outRect.top = spacing;
-                }
-            }
-        }
-    }
-//
-    private int dpToPx(int dp){
-        Resources r = getResources();
-        return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, r.getDisplayMetrics()));
-    }
-//
-    class StoreAdapter extends RecyclerView.Adapter<StoreAdapter.MyViewHolder>{
-        private Context context;
-        private List<Recipes> recipesList;
-
-        public class MyViewHolder extends RecyclerView.ViewHolder{
-            public TextView title;
-            public TextView price;
-            public ImageView thumbnail;
-
-            public MyViewHolder(View view){
-                super(view);
-                title = view.findViewById(R.id.nameProduct);
-                price = view.findViewById(R.id.countProduct);
-                thumbnail = view.findViewById(R.id.thumbnail);
-            }
-        }
-//
-        public StoreAdapter(Context context, List<Recipes> recipesList){
-            this.context = context;
-            this.recipesList = recipesList;
-        }
-//
-        @Override
-        public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType){
-            View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.recipe_item_row, parent, false);
-
-            return new MyViewHolder(itemView);
-        }
-
-        @Override
-        public void onBindViewHolder(MyViewHolder holder, final int position){
-            final Recipes recipe = recipesList.get(position);
-            holder.title.setText(recipe.getName());
-            holder.price.setText(recipe.getCount());
-
-            Glide.with(context)
-                    .load(recipe.getImage())
-                    .into(holder.thumbnail);
-        }
-
-        @Override
-        public int getItemCount(){
-            return recipesList.size();
-        }
-    }
 }
