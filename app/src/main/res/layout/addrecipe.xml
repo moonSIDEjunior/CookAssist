@@ -31,7 +31,7 @@
         app:backgroundTint="@color/app_bar_red"
         tools:ignore="MissingPrefix"/>
 
-    <EditText
+    <AutoCompleteTextView
         android:id="@+id/input_product_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

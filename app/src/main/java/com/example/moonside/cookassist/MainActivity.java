@@ -11,9 +11,15 @@ import android.support.v7.widget.Toolbar;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.TypefaceSpan;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.Window;
 import android.view.WindowManager;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -23,7 +29,12 @@ public class MainActivity extends AppCompatActivity {
     android.support.v4.app.Fragment fragment;
     private String textVar = "";
     public int height = 0;
-    MyApplication ms;
+    ArrayList<String[]> productJson;
+    ProductDao dao = null;
+    AsyncTasks asyncTask = new AsyncTasks(dao);
+    ArrayList<String> autoCompleteList;
+
+
 
     public static class GlobalVars
     {
@@ -52,7 +63,19 @@ public class MainActivity extends AppCompatActivity {
 //        appbar.setTitle(text);
 //        toolbar = getSupportActionBar();
 
-
+        asyncTask.PJS = new AsyncTasks.parseJSON();
+        asyncTask.PJS.execute(loadJSONFromAsset());
+        try {
+            productJson = asyncTask.PJS.get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        MyApplication.getInstance().setList(productJson);
+        productJson = null;
+        productJson = MyApplication.getInstance().getArray();
+        productJson.isEmpty();
 
         BottomNavigationView navigation = findViewById(R.id.navBar);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
@@ -120,4 +143,19 @@ public class MainActivity extends AppCompatActivity {
         transaction.commit();
     }
 
+    public String loadJSONFromAsset() {
+        String json = null;
+        try {
+            InputStream is = this.getAssets().open("productCaloriesList");
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            json = new String(buffer, "UTF-8");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return null;
+        }
+        return json;
+    }
 }

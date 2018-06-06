@@ -1,5 +1,7 @@
 package com.example.moonside.cookassist;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.app.AlertDialog;
 import android.app.SearchManager;
 import android.arch.persistence.room.Room;
@@ -12,7 +14,9 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.RequiresApi;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
@@ -31,6 +35,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewAnimationUtils;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
@@ -85,7 +90,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
     ArrayList<String> autoCompleteList;
     private SearchView addSearchView;
     ArrayList<String[]> productJson;
-
+    MyApplication ms;
 
     //
 //
@@ -104,40 +109,6 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
-
-        asyncTask.PJS = new AsyncTasks.parseJSON();
-        asyncTask.PJS.execute(loadJSONFromAsset());
-        try {
-            productJson = asyncTask.PJS.get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
-        Log.w("sdfdsf", productJson.get(3)[0]);
-//        try {
-//            JSONObject obj = new JSONObject(loadJSONFromAsset());
-//            JSONArray m_jArry = obj.getJSONArray("products");
-//            productJson = new ArrayList<HashMap<String, String >>();
-//            HashMap<String, String > m_li;
-//
-//            for (int i = 0; i < m_jArry.length(); i++) {
-//                JSONObject jo_inside = m_jArry.getJSONObject(i);
-//                String product_name = jo_inside.getString("name");
-//                String product_calories = jo_inside.getString("calories");
-//
-//                //Add your values in your `ArrayList` as below:
-//                m_li = new HashMap<String, String >();
-//                m_li.put("name", product_name);
-//                m_li.put("calories", product_calories);
-//
-//                productJson.add(m_li);
-//            }
-//        } catch (JSONException e) {
-//            e.printStackTrace();
-//        }
-
-
     }
 
     @Override
@@ -156,6 +127,12 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
         searchView.setSearchableInfo(searchManager
                 .getSearchableInfo(getActivity().getComponentName()));
         searchView.setMaxWidth(Integer.MAX_VALUE);
+//        searchView.setSubmitButtonEnabled(true);
+        EditText txtSearch = ((EditText) searchView.findViewById(android.support.v7.appcompat.R.id.search_src_text));
+        txtSearch.setHint("Поиск..");
+        txtSearch.setHintTextColor(getResources().getColor(R.color.red_black_Statusbar));
+        txtSearch.setTextColor(getResources().getColor(R.color.red_black));
+
 
         // listening to search query text change
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -175,8 +152,6 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
         });
 
     }
-
-
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -289,6 +264,8 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        productJson = new ArrayList<>();
+        productJson = ms.getInstance().getArray();
         View view = inflater.inflate(R.layout.product_fragment, container, false);
         ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
                 .build();

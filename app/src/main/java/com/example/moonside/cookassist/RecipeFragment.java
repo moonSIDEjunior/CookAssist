@@ -9,12 +9,15 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -41,6 +44,9 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
     public String products = "";
     private List<Recipe> recipes;
     private MyAdapter adapter;
+    MyApplication ms;
+    ArrayList<String[]> productJson;
+    ArrayList<String> autoCompleteList;
 
     RecyclerView list;
     RecyclerView.LayoutManager layoutManager;
@@ -86,7 +92,7 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
 
                 mDialogBuilder.setView(promptsView);
                 final EditText recipeNameInput = (EditText) promptsView.findViewById(R.id.input_recipe_name);
-                final EditText productNameInput = promptsView.findViewById(R.id.input_product_name);
+                final AutoCompleteTextView productNameInput = promptsView.findViewById(R.id.input_product_name);
                 final EditText productCountInput = promptsView.findViewById(R.id.input_product_count);
                 final TextView error = promptsView.findViewById(R.id.error_show);
 
@@ -95,6 +101,15 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
                         .setNeutralButton("Cancel", null)
                         .setPositiveButton("+", null)
                         .setNegativeButton("Add", null);
+
+                autoCompleteList = new ArrayList<String>();
+
+                for (String[] temp : productJson) {
+                    autoCompleteList.add(temp[0]);
+                }
+
+                productNameInput.setAdapter(new ArrayAdapter(getActivity(),
+                        android.R.layout.simple_dropdown_item_1line, autoCompleteList));
 
 
                 final AlertDialog alertDialog = mDialogBuilder.create();
@@ -244,6 +259,9 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        productJson = new ArrayList<>();
+        productJson = ms.getInstance().getArray();
+
         View view = inflater.inflate(R.layout.recipe_fragment, container, false);
 
         mTextMessage = (TextView) view.findViewById(R.id.message);
