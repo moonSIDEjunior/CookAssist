@@ -133,7 +133,7 @@ public class AsyncTasksForRecipes {
 
         @Override
         protected Void doInBackground(String... strings) {
-            mAsyncTaskDao.updateCount(strings[0], strings[2]);
+//            mAsyncTaskDao.updateCount(strings[0], strings[2]);
             mAsyncTaskDao.updateName(strings[0], strings[1]);
             return null;
         }

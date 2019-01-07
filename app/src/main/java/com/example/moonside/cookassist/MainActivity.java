@@ -13,8 +13,11 @@ import android.text.SpannableString;
 import android.text.style.TypefaceSpan;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<String> autoCompleteList;
 
 
-
     public static class GlobalVars
     {
         public static int value;
@@ -45,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
 
 
 //Настройка статус бара
@@ -64,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
 //        toolbar = getSupportActionBar();
 
         asyncTask.PJS = new AsyncTasks.parseJSON();
-        asyncTask.PJS.execute(loadJSONFromAsset());
+        asyncTask.PJS.execute(loadJSONFromAsset("productCaloriesList"));
         try {
             productJson = asyncTask.PJS.get();
         } catch (InterruptedException e) {
@@ -88,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
         text.setSpan(new TypefaceSpan("assets/fonts/kiril.otf"), 0, text.length(),
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         appbar.setTitle(text);
-        fragment = new ProductFragment();
+        fragment = new RecipeFragment();
         loadFragment(fragment);
 
     }
@@ -143,10 +146,10 @@ public class MainActivity extends AppCompatActivity {
         transaction.commit();
     }
 
-    public String loadJSONFromAsset() {
+    public String loadJSONFromAsset(String direct) {
         String json = null;
         try {
-            InputStream is = this.getAssets().open("productCaloriesList");
+            InputStream is = this.getAssets().open(direct);
             int size = is.available();
             byte[] buffer = new byte[size];
             is.read(buffer);

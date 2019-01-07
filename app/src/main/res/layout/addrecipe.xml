@@ -12,10 +12,14 @@
         android:id="@+id/tv"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Please, enter your recipe: "
-        android:textColor="#E57373"
+        android:text="@string/new_receipt"
+        android:paddingTop="10dp"
+        android:gravity="center_horizontal|center_vertical"
+        android:textSize="20sp"
+        android:textColor="@color/red_black"
         android:textAppearance="?android:attr/textAppearanceLarge"
         />
+
 
     <EditText
         android:id="@+id/input_recipe_name"
@@ -26,7 +30,7 @@
         android:layout_marginRight="4dp"
         android:layout_marginBottom="8dp"
         android:fontFamily="sans-serif"
-        android:hint="Enter recipe name..."
+        android:hint="@string/enter_recipe_name"
         android:textColor="@color/red_black"
         app:backgroundTint="@color/app_bar_red"
         tools:ignore="MissingPrefix"/>
@@ -40,7 +44,7 @@
         android:layout_marginRight="4dp"
         android:layout_marginBottom="8dp"
         android:fontFamily="sans-serif"
-        android:hint="Enter product name..."
+        android:hint="@string/enter_product_name"
         android:textColor="@color/red_black"
         app:backgroundTint="@color/app_bar_red"
         tools:ignore="MissingPrefix"/>
@@ -54,7 +58,7 @@
         android:layout_marginRight="4dp"
         android:layout_marginBottom="8dp"
         android:fontFamily="sans-serif"
-        android:hint="Enter product's count..."
+        android:hint="@string/enter_product_count"
         android:textColor="@color/red_black"
         app:backgroundTint="@color/app_bar_red"
         tools:ignore="MissingPrefix"

@@ -1,23 +1,21 @@
 package com.example.moonside.cookassist;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.SearchManager;
 import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
-import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.RequiresApi;
 import android.support.constraint.ConstraintLayout;
+import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
@@ -29,33 +27,25 @@ import android.support.v7.widget.SearchView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewAnimationUtils;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 //
@@ -91,6 +81,8 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
     private SearchView addSearchView;
     ArrayList<String[]> productJson;
     MyApplication ms;
+    List<Recipe> recipes_FJ;
+    Button fi;
 
     //
 //
@@ -109,6 +101,8 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+
+
     }
 
     @Override
@@ -264,9 +258,34 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.product_fragment, container, false);
+        View mainActivityView = inflater.inflate(R.layout.activity_main, container, false);
+        AppBarLayout appBarLayout =(AppBarLayout) mainActivityView.findViewById(R.id.appBar);
+        RelativeLayout rl = (RelativeLayout) view.findViewById(R.id.product_recycles_place);
+        //Set recycles layout height
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        ((Activity) getContext()).getWindowManager()
+                .getDefaultDisplay()
+                .getRealMetrics(displayMetrics);
+        int height = displayMetrics.heightPixels;
+        Log.w("Statusbar ", String.valueOf(getStatusBarHeight()));
+        rl.getLayoutParams().height = height - 2 * (int) convertDpToPx(56) - getStatusBarHeight();
+
+        /*Парсинг рецептов из JSON файла
+        *
+        */
+        asyncTask.PRJ = new AsyncTasks.parseRecipesJSON();
+        asyncTask.PRJ.execute(loadJSONFromAsset("recipesList"));
+        try {
+            recipes_FJ = asyncTask.PRJ.get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        RecipesSingleton.getInstance().setList(recipes_FJ);
         productJson = new ArrayList<>();
         productJson = ms.getInstance().getArray();
-        View view = inflater.inflate(R.layout.product_fragment, container, false);
         ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
                 .build();
 //        List<Product> productList = new ArrayList<>();
@@ -300,7 +319,8 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
 
         mAdapter.notifyDataSetChanged();
         initSwipe();
-
+        //TODO: Дописать синглтон для передачи массива продуктов в другой фрагмент - DONE
+        ListSingleton.getInstance().setList(productList);
         return view;
     }
     private void initSwipe(){
@@ -479,6 +499,11 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
 
     }
 
+    public static int convertPxToDp(int px)
+    {
+        return (int) (px / Resources.getSystem().getDisplayMetrics().density);
+    }
+
 
     private void removeView(){
         if(view.getParent()!=null) {
@@ -501,10 +526,11 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
         return true;
     }
 
-    public String loadJSONFromAsset() {
+
+    public String loadJSONFromAsset(String direct) {
         String json = null;
         try {
-            InputStream is = getActivity().getAssets().open("productCaloriesList");
+            InputStream is = getActivity().getAssets().open(direct);
             int size = is.available();
             byte[] buffer = new byte[size];
             is.read(buffer);
@@ -515,6 +541,15 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
             return null;
         }
         return json;
+    }
+
+    public int getStatusBarHeight() {
+        int result = 0;
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = getResources().getDimensionPixelSize(resourceId);
+        }
+        return result;
     }
 }
 //

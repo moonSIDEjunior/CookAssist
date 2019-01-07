@@ -11,6 +11,7 @@
     android:background="@color/md_grey_200"
     tools:context="com.example.moonside.cookassist.ProductFragment">
     <RelativeLayout
+        android:id="@+id/product_recycles_place"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
         <android.support.v7.widget.RecyclerView

@@ -44,6 +44,12 @@ public class Product {
         return this;
     };
 
+    public Product ProductIntoReceipt(String name, Integer count) {
+        this.name = name;
+        this.count = count;
+        return this;
+    };
+
     public Integer getId(){
         return id;
     }

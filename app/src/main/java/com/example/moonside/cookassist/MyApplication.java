@@ -27,7 +27,7 @@ public class MyApplication  {
     }
 
     private MyApplication() {
-        list = new ArrayList<String[]>();
+        list = new ArrayList<>();
     }
     // retrieve array from anywhere
     public ArrayList<String[]> getArray() {

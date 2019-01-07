@@ -7,6 +7,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +19,7 @@ public class AsyncTasks {
     deleteAsyncTask DAT;
     updateAsyncTask UAT;
     parseJSON PJS;
-
+    parseRecipesJSON PRJ;
 
     public AsyncTasks(ProductDao productDao) {
         this.productDao = productDao;
@@ -184,14 +185,66 @@ public class AsyncTasks {
             }
             return productJson;
         }
-
-
         @Override
         protected void onPostExecute(ArrayList<String[]> result) {
             super.onPostExecute(result);
         }
 
     }
+    static class parseRecipesJSON extends AsyncTask<String , Void, List<Recipe>> {
 
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected List<Recipe> doInBackground(String... strings) {
+            List<Recipe> recipeJson = new ArrayList<>();
+            List<Product> list_prod = new ArrayList<>();
+            try {
+                JSONObject obj = new JSONObject(strings[0]);
+                JSONArray m_jArry = obj.getJSONArray("recipes");
+                Recipe m_li = new Recipe();
+
+                for (int i = 0; i < m_jArry.length(); i++) {
+                    JSONObject jo_inside = m_jArry.getJSONObject(i);
+                    String recipe_name = jo_inside.getString("name");
+                    JSONArray product_list = jo_inside.getJSONArray("products");
+                    Product m_ar;
+
+                    for (int j = 0; j < product_list.length(); j++) {
+                        JSONObject re_inside = product_list.getJSONObject(j);
+                        String product_name = re_inside.getString("name");
+                        String product_count = re_inside.getString("count");
+                        String product_calories = re_inside.getString("calories");
+
+
+                        m_ar = new Product().ProductAll(product_name,
+                                Integer.parseInt(product_count),
+                                Integer.parseInt(product_calories));
+
+                        list_prod.add(m_ar);
+                    }
+                    //Add your values in your `ArrayList` as below:
+                    m_li.setRecipeName(recipe_name);
+                    m_li.setProductList(list_prod);
+
+
+                    recipeJson.add(m_li);
+                    list_prod = new ArrayList<>();
+                    m_li = new Recipe();
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return recipeJson;
+        }
+        @Override
+        protected void onPostExecute(List<Recipe> result) {
+            super.onPostExecute(result);
+        }
+
+    }
 
 }

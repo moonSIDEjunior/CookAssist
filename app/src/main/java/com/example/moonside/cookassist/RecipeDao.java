@@ -38,8 +38,8 @@ public interface RecipeDao {
     @Query("UPDATE Recipes SET Recipe_Name = :nameUpdate WHERE Recipe_Name LIKE :name")
     void updateName(String name, String... nameUpdate);
 
-    @Query("UPDATE Recipes SET Product_Name = :count WHERE Product_Name LIKE :name ")
-    void updateCount(String name, String... count);
+//    @Query("UPDATE Recipes SET Product_Name = :count WHERE Product_Name LIKE :name ")
+//    void updateCount(String name, String... count);
 
     @Update
     void updateRecipe(Recipe recipe);

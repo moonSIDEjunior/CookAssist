@@ -9,6 +9,10 @@
         <color name="app_bar_red">#cb9ca1</color>
         <color name="dialog_btn">#b5767c</color>
 
+        <color name="primary_green">#6a8136</color>
+        <color name="white">#FFFFFF</color>
+        <color name="background_card">#FEFEFE</color>
+
 
         <!--reds-->
         <color name="md_red_50">#FFEBEE</color>
