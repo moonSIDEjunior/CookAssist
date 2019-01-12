@@ -197,7 +197,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
                         buttonPos.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                final ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
+                                final ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.3")
                                         .build();
                                 if (productCountInput.getText().toString().equals("") || productNameInput.getText().toString().equals("") || productCaloriesInput.getText().toString().equals("")) {
                                     if (productNameInput.getText().toString().equals("")) productNameInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
@@ -286,7 +286,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
         RecipesSingleton.getInstance().setList(recipes_FJ);
         productJson = new ArrayList<>();
         productJson = ms.getInstance().getArray();
-        ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
+        ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.3")
                 .build();
 //        List<Product> productList = new ArrayList<>();
         productDao = db.getProductDao();
@@ -335,7 +335,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
                 final int position = viewHolder.getAdapterPosition();
 
                 if (direction == ItemTouchHelper.LEFT){
-                    ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.2")
+                    ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.3")
                             .build();
                     asyncTask.DAT = new AsyncTasks.deleteAsyncTask(productDao);
                     asyncTask.DAT.execute(mAdapter.getField("name", position));
@@ -363,6 +363,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
                     snackBarView.setElevation(0f);
                     snackbar.setActionTextColor(Color.YELLOW);
                     snackbar.show();
+                    db.close();
                 } else {
                     mAdapter.notifyDataSetChanged();
                     LayoutInflater li = LayoutInflater.from(getActivity());

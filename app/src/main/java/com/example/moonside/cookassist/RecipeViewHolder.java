@@ -10,6 +10,7 @@ import com.bignerdranch.expandablerecyclerview.ParentViewHolder;
 public class RecipeViewHolder extends ParentViewHolder {
 
     private TextView mRecipeTextView;
+    private TextView getmRecipeCalories;
     private ImageView mRecipeArrow;
     private int expanded;
     private View view;
@@ -19,11 +20,13 @@ public class RecipeViewHolder extends ParentViewHolder {
         this.expanded = expanded;
         this.view = itemView;
         mRecipeTextView = itemView.findViewById(R.id.recipe_textview);
+        getmRecipeCalories = itemView.findViewById(R.id.recipe_calories);
         mRecipeArrow = itemView.findViewById(R.id.arrow_expand_imageview);
     }
 
     public void bind(Recipe recipe) {
         mRecipeTextView.setText(recipe.getRecipeName());
+        getmRecipeCalories.setText("Калорийность: " + String.valueOf(recipe.countCalories()));
     }
 
     public void rotateDown() {

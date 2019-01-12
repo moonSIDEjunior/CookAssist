@@ -55,6 +55,7 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import java.util.concurrent.ExecutionException;
 
 public class RecipeFragment extends Fragment implements View.OnClickListener {
@@ -62,10 +63,10 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
     private Button AddBn, Delete, Upgrade, AddButton;
     private TextView mTextMessage, error;
     private EditText recipeName, productName, productCount;
-    //    public static RecipeDatabase myAppDatabase;
+    public static RecipeDatabase myAppDatabase;
     public static android.support.v4.app.FragmentManager fragmentManager;
-    //    private RecipeDao myDao;
-//    private AsyncTasksForRecipes asyncTasks = new AsyncTasksForRecipes(myDao);
+    private RecipeDao myDao;
+    private AsyncTasksForRecipes asyncTasks = new AsyncTasksForRecipes(myDao);
     private boolean z = false;
     private boolean b = false;
     private String textVar = "";
@@ -73,6 +74,7 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
     private List<Recipe> recipes;
     private RecipeAdapter adapter;
     private RecyclerView mRecyclerView;
+    private String tempCalorie;
 
     //    private MyAdapter adapter;
     MyApplication ms;
@@ -185,6 +187,10 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.recipe_fragment, container, false);
 
+        final RecipeDatabase db = Room.databaseBuilder(getContext(), RecipeDatabase.class, "RecipeDB_V0.1")
+                .build();
+
+
         LinearLayout ll = (LinearLayout) view.findViewById(R.id.linear_recipe_layout);
         //Set recycles layout height
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -199,7 +205,18 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
         ll.setLayoutParams(new FrameLayout.LayoutParams(tempWidth,tempHeight));
 
 
-        final List<Recipe> recipes = RecipesSingleton.getInstance().getArray();
+        myDao = db.getProductDao();
+        asyncTasks.CAT = new AsyncTasksForRecipes.createAsyncTask(myDao);
+        asyncTasks.CAT.execute();
+        try {
+            recipes = asyncTasks.CAT.get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+
+        Log.w("Test_recipes", recipes.get(0).getRecipeName());
 
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerviewAdapter);
@@ -210,11 +227,7 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
             @Override
             public void onParentExpanded(int parentPosition) {
                 Recipe expandedRecipe = recipes.get(parentPosition);
-                String toastMsg = getResources().getString(R.string.expanded, expandedRecipe.getRecipeName());
-                Toast.makeText(getActivity(),
-                        toastMsg,
-                        Toast.LENGTH_SHORT)
-                        .show();
+
             }
 
             @UiThread
@@ -222,11 +235,6 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
             public void onParentCollapsed(int parentPosition) {
                 Recipe collapsedRecipe = recipes.get(parentPosition);
 
-                String toastMsg = getResources().getString(R.string.collapsed, collapsedRecipe.getRecipeName());
-                Toast.makeText(getActivity(),
-                        toastMsg,
-                        Toast.LENGTH_SHORT)
-                        .show();
             }
         });
 
@@ -289,9 +297,25 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
                 productNameInput.setAdapter(new ArrayAdapter(getActivity(),
                         android.R.layout.simple_dropdown_item_1line, autoCompleteList));
 
+                productNameInput.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+                        String tempName = productNameInput.getText().toString();
+                        String tempCalories = null;
+                        for (String[] temp : productJson) {
+                            if (temp[0].equals(tempName)) {
+                                tempCalories = temp[1];
+                                break;
+                            }
+                        }
+                        tempCalorie = tempCalories;
+                    }
+                });
+
+
 
                 final AlertDialog alertDialog = mDialogBuilder.create();
                 alertDialog.show();
+                recipeNameInput.requestFocus();
                 alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.dialog_btn));
                 alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.dialog_btn));
                 alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(getResources().getColor(R.color.dialog_btn));
@@ -301,7 +325,6 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
                     public void onClick(View view) {
                         String productname = productNameInput.getText().toString();
                         String productcount = productCountInput.getText().toString();
-                        
                         if (productname.equals("")) {
                             productNameInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
                             error.setText(R.string.enter_product_name);
@@ -313,12 +336,26 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
                                     error.setText(R.string.enter_product_count);
                                 } else {
                                     productCountInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
-                                    products.add(new Product().ProductIntoReceipt(productname, Integer.parseInt(productcount)));
+                                    try {
+                                        products.add(new Product().ProductAll(
+                                                productNameInput.getText().toString(),
+                                                Integer.parseInt(productCountInput.getText().toString()),
+                                                Integer.parseInt(tempCalorie)));
+                                    }
+                                    catch (NumberFormatException e) {
+                                        products.add(new Product().ProductIntoReceipt(
+                                                productNameInput.getText().toString(),
+                                                Integer.parseInt(productCountInput.getText()
+                                                        .toString())));
+                                        Log.w("Adding", "True");
+                                    }
+                                    tempCalorie = null;
 
                                     productNameInput.setText("");
                                     productCountInput.setText("");
-
+                                    recipeNameInput.setEnabled(false);
                                     Toast.makeText(getActivity(),  "\"" + productname + "\"" + " успешно добавлен!", Toast.LENGTH_SHORT).show();
+                                    productNameInput.requestFocus();
                                 }
                             }
                         }
@@ -328,8 +365,8 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
                 alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-//                        final RecipeDatabase db = Room.databaseBuilder(getContext(), RecipeDatabase.class, "RecipeDB_V0.1")
-//                                .build();
+                        final RecipeDatabase db = Room.databaseBuilder(getContext(), RecipeDatabase.class, "RecipeDB_V0.1")
+                                .build();
                         String recipename = recipeNameInput.getText().toString();
                         if (recipename.equals("")) {
                             recipeNameInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
@@ -350,27 +387,36 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
                                     productCountInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
                                     error.setText(R.string.enter_product_count);
                                 } else if (!productNameInput.getText().toString().equals("") & !productCountInput.getText().toString().equals("")) {
-                                    products.add(new Product().ProductIntoReceipt(
-                                            productNameInput.getText().toString(),
-                                            Integer.parseInt(productCountInput.getText().toString())));
+                                    try {
+                                        products.add(new Product().ProductAll(
+                                                productNameInput.getText().toString(),
+                                                Integer.parseInt(productCountInput.getText().toString()),
+                                                Integer.parseInt(tempCalorie)));
+                                    }
+                                    catch (NumberFormatException e) {
+                                        products.add(new Product().ProductIntoReceipt(
+                                                productNameInput.getText().toString(),
+                                                Integer.parseInt(productCountInput.getText()
+                                                        .toString())));
+                                        Log.w("Adding", "True");
+                                    }
+                                    tempCalorie = null;
 
-                                    Recipe recipe = new Recipe(recipename, products);
+                                    recipeNameInput.setEnabled(true);
+                                    List<Product> localList = new ArrayList<>(products);
+                                    final Recipe recipe = new Recipe(recipename, localList);
 
-//                                    myDao = db.myDao();
-//                                    asyncTasks.AAT = new AsyncTasksForRecipes.addAsyncTask(myDao);
-//                                    asyncTasks.AAT.execute(recipe);
-//                                    adapter.addRecipe(adapter.getItemCount(), recipe);
-//                                    list.setAdapter(adapter);
+                                    myDao = db.getProductDao();
+                                    asyncTasks.AAT = new AsyncTasksForRecipes.addAsyncTask(myDao);
+                                    asyncTasks.AAT.execute(recipe);
+                                    adapter.addItem(adapter.getItemCount(), recipe);
+
+                                    mRecyclerView.setAdapter(adapter);
 
                                     Toast.makeText(getActivity(), "\"" + recipename + "\"" + " успешно добавлен!", Toast.LENGTH_SHORT).show();
                                     error.setText("");
-
-                                    recipeNameInput.setText("");
-                                    productNameInput.setText("");
-                                    productCountInput.setText("");
-                                    recipeNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
-                                    productNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
-                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    products.clear();
+                                    alertDialog.dismiss();
                                 } else {
                                     productNameInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
                                     productCountInput.getBackground().setTint(getResources().getColor(R.color.md_red_700));
@@ -386,44 +432,54 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
                                     productCountInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
                                     error.setText(R.string.enter_product_name);
                                 } else if (!productNameInput.getText().toString().equals("") & !productCountInput.getText().toString().equals("")) {
-                                    products.add(new Product().ProductIntoReceipt(
-                                            productNameInput.getText().toString(),
-                                            Integer.parseInt(productCountInput.getText().toString())));
-                                    Recipe recipe = new Recipe(recipename, products);
+                                    try {
+                                        products.add(new Product().ProductAll(
+                                                productNameInput.getText().toString(),
+                                                Integer.parseInt(productCountInput.getText().toString()),
+                                                Integer.parseInt(tempCalorie)));
+                                    }
+                                    catch (NumberFormatException e) {
+                                        products.add(new Product().ProductIntoReceipt(
+                                                productNameInput.getText().toString(),
+                                                Integer.parseInt(productCountInput.getText()
+                                                        .toString())));
+                                        Log.w("Adding", "True");
+                                    }
+                                    tempCalorie = null;
 
-//                                    myDao = db.myDao();
-//                                    asyncTasks.AAT = new AsyncTasksForRecipes.addAsyncTask(myDao);
-//                                    asyncTasks.AAT.execute(recipe);
-//                                    adapter.addRecipe(adapter.getItemCount(), recipe);
-//                                    list.setAdapter(adapter);
+                                    recipeNameInput.setEnabled(true);
+                                    List<Product> localList = new ArrayList<>(products);
+                                    final Recipe recipe = new Recipe(recipename, localList);
+
+                                    myDao = db.getProductDao();
+                                    asyncTasks.AAT = new AsyncTasksForRecipes.addAsyncTask(myDao);
+                                    asyncTasks.AAT.execute(recipe);
+
+                                    adapter.addItem(adapter.getItemCount(), recipe);
+                                    mRecyclerView.setAdapter(adapter);
 
                                     Toast.makeText(getActivity(), "\"" + recipename + "\"" + " успешно добавлен!", Toast.LENGTH_SHORT).show();
                                     error.setText("");
 
-                                    recipeNameInput.setText("");
-                                    productNameInput.setText("");
-                                    productCountInput.setText("");
-                                    recipeNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
-                                    productNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
-                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    products.clear();
+                                    alertDialog.dismiss();
                                 } else {
-                                    Recipe recipe = new Recipe(recipename, products);
+                                    List<Product> localList = new ArrayList<>(products);
+                                    final Recipe recipe = new Recipe(recipename, localList);
 
-//                                    myDao = db.myDao();
-//                                    asyncTasks.AAT = new AsyncTasksForRecipes.addAsyncTask(myDao);
-//                                    asyncTasks.AAT.execute(recipe);
-//                                    adapter.addRecipe(adapter.getItemCount(), recipe);
-//                                    list.setAdapter(adapter);
+                                    myDao = db.getProductDao();
+                                    asyncTasks.AAT = new AsyncTasksForRecipes.addAsyncTask(myDao);
+                                    asyncTasks.AAT.execute(recipe);
+
+                                    adapter.addItem(adapter.getItemCount(), recipe);
+                                    mRecyclerView.setAdapter(adapter);
+
+                                    recipeNameInput.setEnabled(true);
 
                                     Toast.makeText(getActivity(), "\"" + recipename + "\"" + " успешно добавлен!", Toast.LENGTH_SHORT).show();
                                     error.setText("");
                                     products.clear();
-                                    recipeNameInput.setText("");
-                                    productNameInput.setText("");
-                                    productCountInput.setText("");
-                                    recipeNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
-                                    productNameInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
-                                    productCountInput.getBackground().setTint(getResources().getColor(R.color.app_bar_red));
+                                    alertDialog.dismiss();
                                 }
                             }
                         }

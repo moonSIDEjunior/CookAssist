@@ -15,7 +15,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:layout_marginStart="0dp"
+            android:layout_marginStart="16dp"
             android:maxLines="1"
             android:textSize="@dimen/standard_text_size"
             android:textColor="#5e4749"

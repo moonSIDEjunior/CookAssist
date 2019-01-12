@@ -100,6 +100,12 @@ public class RecipeAdapter extends ExpandableRecyclerAdapter<Recipe, Product, Re
         return viewType == PARENT_VEGETARIAN || viewType == PARENT_NORMAL;
     }
 
+    public void addItem(int position, Recipe recipe) {
+        mRecipeList.add(recipe);
+        notifyItemInserted(position);
+        notifyParentInserted(position);
+        notifyItemRangeChanged(position, mRecipeList.size());
+    }
 
 }
 

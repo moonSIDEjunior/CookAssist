@@ -5,6 +5,7 @@ import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.Ignore;
 import android.arch.persistence.room.PrimaryKey;
 import android.arch.persistence.room.TypeConverters;
+import android.util.Log;
 
 import java.util.List;
 
@@ -69,6 +70,24 @@ public class Recipe implements Parent<Product>,
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public int countCalories() {
+            int temp = 0;
+            for (Product item : ProductList) {
+                try {
+                    temp += Integer.parseInt(String.valueOf(item.getCalories() *
+                            item.getCount() / 100));
+                    Log.w("Info1", item.getName() + " " +
+                            String.valueOf(item.getCalories()) + " " +
+                            String.valueOf(item.getCount()) + " " +
+                    String.valueOf(temp));
+                }
+                catch (NullPointerException e) {
+
+                }
+            }
+        return temp;
     }
 
     public String findInNames(String currentName, int currentCount) {
