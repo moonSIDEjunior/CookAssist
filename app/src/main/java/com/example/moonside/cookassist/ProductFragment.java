@@ -81,7 +81,6 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
     private SearchView addSearchView;
     ArrayList<String[]> productJson;
     MyApplication ms;
-    List<Recipe> recipes_FJ;
     Button fi;
 
     //
@@ -274,16 +273,7 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
         /*Парсинг рецептов из JSON файла
         *
         */
-        asyncTask.PRJ = new AsyncTasks.parseRecipesJSON();
-        asyncTask.PRJ.execute(loadJSONFromAsset("recipesList"));
-        try {
-            recipes_FJ = asyncTask.PRJ.get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
-        RecipesSingleton.getInstance().setList(recipes_FJ);
+
         productJson = new ArrayList<>();
         productJson = ms.getInstance().getArray();
         ProductDatabase db = Room.databaseBuilder(getContext(), ProductDatabase.class, "product_database_v0.3.3")
@@ -363,7 +353,6 @@ public class ProductFragment extends Fragment implements View.OnClickListener, S
                     snackBarView.setElevation(0f);
                     snackbar.setActionTextColor(Color.YELLOW);
                     snackbar.show();
-                    db.close();
                 } else {
                     mAdapter.notifyDataSetChanged();
                     LayoutInflater li = LayoutInflater.from(getActivity());

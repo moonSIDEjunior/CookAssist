@@ -4,7 +4,9 @@ package com.example.moonside.cookassist;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.SearchManager;
 import android.arch.persistence.room.Room;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -24,6 +26,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -75,7 +78,12 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
     private RecipeAdapter adapter;
     private RecyclerView mRecyclerView;
     private String tempCalorie;
+    private SearchView searchView;
+    private List<Recipe> singletonArray;
 
+
+    private int tempParentPosition;
+    private boolean tempCollapsed = false;
     //    private MyAdapter adapter;
     MyApplication ms;
     ArrayList<String[]> productJson;
@@ -102,78 +110,110 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
 
     private void initSwipe(){
 
-        ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+        final ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
             public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
-                return false;
+                return true;
             }
             //TODO: Complete action on swipes!
             @Override
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
                 final int position = viewHolder.getItemViewType();
+                adapter.collapseAllParents();
+                tempParentPosition = viewHolder.getAdapterPosition();
                 if (position == 1) {
-                    if (direction == ItemTouchHelper.LEFT) {
-                        String toastMsg = "Lest Parent";
-                        Toast.makeText(getActivity(),
-                                toastMsg,
-                                Toast.LENGTH_SHORT)
-                                .show();
+                    String toastMsg = "Lest Parent";
 
-                    } else {
-                        String toastMsg = "Right Parent";
-                        Toast.makeText(getActivity(),
-                                toastMsg,
-                                Toast.LENGTH_SHORT)
-                                .show();
+                    final RecipeDatabase db = Room.databaseBuilder(getContext(),
+                            RecipeDatabase.class, "RecipeDB_V0.1")
+                            .build();
+                    asyncTasks.DAT = new AsyncTasksForRecipes.deleteAsyncTask(myDao);
+                    asyncTasks.DAT.execute(adapter.getName(tempParentPosition));
 
-                    }
+                    final Recipe tempRecipe = new Recipe(adapter.getName(tempParentPosition),
+                            adapter.getList(tempParentPosition));
+                    adapter.removeItem(tempParentPosition);
+
+                    Snackbar snackbar = Snackbar.make(getActivity()
+                            .findViewById(android.R.id.content), "Рецепт \"" +
+                            tempRecipe.getRecipeName() + "\" удален!", Snackbar.LENGTH_SHORT);
+                    snackbar.setAction("ОТМЕНИТЬ", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            adapter.restoreItem(
+                                    tempParentPosition,
+                                    tempRecipe);
+                            if (!singletonArray.contains(tempRecipe)) {
+                                asyncTasks.AAT = new AsyncTasksForRecipes.addAsyncTask(myDao);
+                                asyncTasks.AAT.execute(tempRecipe);
+                            }
+                        }
+                    });
+                    View snackBarView = snackbar.getView();
+                    Snackbar.SnackbarLayout.LayoutParams params = (Snackbar.SnackbarLayout.LayoutParams) snackBarView.getLayoutParams();
+                    params.setMargins(0, 0, 0, (int) convertDpToPx(56));
+                    snackBarView.setLayoutParams(params);
+                    snackBarView.setElevation(0f);
+                    snackbar.setActionTextColor(Color.YELLOW);
+                    snackbar.show();
                 }
                 else {
-                    if (direction == ItemTouchHelper.LEFT) {
-                        String toastMsg = "Left Child";
-                        Toast.makeText(getActivity(),
-                                toastMsg,
-                                Toast.LENGTH_SHORT)
-                                .show();
-
-                    } else {
-                        String toastMsg = "Right Child";
-                        Toast.makeText(getActivity(),
-                                toastMsg,
-                                Toast.LENGTH_SHORT)
-                                .show();
-
-                    }
+                    Snackbar snackbar = Snackbar.make(getActivity()
+                                    .findViewById(android.R.id.content),
+                            "Сожалею, но пока это не работает", Snackbar.LENGTH_SHORT);
+                    View snackBarView = snackbar.getView();
+                    Snackbar.SnackbarLayout.LayoutParams params = (Snackbar.SnackbarLayout.LayoutParams) snackBarView.getLayoutParams();
+                    params.setMargins(0, 0, 0, (int) convertDpToPx(56));
+                    snackBarView.setLayoutParams(params);
+                    snackBarView.setElevation(0f);
+                    snackbar.setActionTextColor(Color.YELLOW);
+                    snackbar.show();
+                    adapter.notifyDataSetChanged();
 
                 }
             }
 
             @Override
             public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-
                 Bitmap icon;
                 if(actionState == ItemTouchHelper.ACTION_STATE_SWIPE){
-
                     View itemView = viewHolder.itemView;
                     float height = (float) itemView.getBottom() - (float) itemView.getTop();
                     float width = height / 3;
                     Paint p = new Paint();
-
-
-                    if(dX > 0){
-                        p.setColor(Color.parseColor("#039BE5"));
-                        RectF background = new RectF((float) itemView.getLeft(), (float) itemView.getTop(), dX,(float) itemView.getBottom());
-                        c.drawRect(background,p);
-                        icon = BitmapFactory.decodeResource(getResources(), R.drawable.ic_settings);
-                        RectF icon_dest = new RectF((float) itemView.getLeft() + width ,(float) itemView.getTop() + width,(float) itemView.getLeft()+ 2*width,(float)itemView.getBottom() - width);
-                        c.drawBitmap(icon,null,icon_dest,p);
-                    } else {
-                        p.setColor(Color.parseColor("#EF5350"));
-                        RectF background = new RectF((float) itemView.getRight() + dX, (float) itemView.getTop(),(float) itemView.getRight(), (float) itemView.getBottom());
-                        c.drawRect(background,p);
-                        icon = BitmapFactory.decodeResource(getResources(), R.drawable.ic_delete);
-                        RectF icon_dest = new RectF((float) itemView.getRight() - 2*width ,(float) itemView.getTop() + width,(float) itemView.getRight() - width,(float)itemView.getBottom() - width);
-                        c.drawBitmap(icon,null,icon_dest,p);
+                    if (viewHolder.getItemViewType() == 1) {
+                        if (dX > 0) {
+                            p.setColor(Color.parseColor("#EF5350"));
+                            RectF background = new RectF((float) itemView.getLeft(), (float) itemView.getTop(), dX, (float) itemView.getBottom());
+                            c.drawRect(background, p);
+                            icon = BitmapFactory.decodeResource(getResources(), R.drawable.ic_delete);
+                            RectF icon_dest = new RectF((float) itemView.getLeft() + width, (float) itemView.getTop() + width, (float) itemView.getLeft() + 2 * width, (float) itemView.getBottom() - width);
+                            c.drawBitmap(icon, null, icon_dest, p);
+                        } else {
+                            p.setColor(Color.parseColor("#EF5350"));
+                            RectF background = new RectF((float) itemView.getRight() + dX, (float) itemView.getTop(), (float) itemView.getRight(), (float) itemView.getBottom());
+                            c.drawRect(background, p);
+                            icon = BitmapFactory.decodeResource(getResources(), R.drawable.ic_delete);
+                            RectF icon_dest = new RectF((float) itemView.getRight() - 2 * width, (float) itemView.getTop() + width, (float) itemView.getRight() - width, (float) itemView.getBottom() - width);
+                            c.drawBitmap(icon, null, icon_dest, p);
+                        }
+                    }
+                    else {
+                        if (dX > 0) {
+                            p.setColor(Color.parseColor("#039BE5"));
+                            RectF background = new RectF((float) itemView.getLeft(), (float) itemView.getTop(), dX,(float) itemView.getBottom());
+                            c.drawRect(background,p);
+                            icon = BitmapFactory.decodeResource(getResources(), R.drawable.ic_settings);
+                            RectF icon_dest = new RectF((float) itemView.getLeft() + width ,(float) itemView.getTop() + width,(float) itemView.getLeft()+ 2*width,(float)itemView.getBottom() - width);
+                            c.drawBitmap(icon,null,icon_dest,p);
+                        } else {
+                            p.setColor(Color.parseColor("#EF5350"));
+                            RectF background = new RectF((float) itemView.getRight() + dX, (float) itemView.getTop(), (float) itemView.getRight(), (float) itemView.getBottom());
+                            c.drawRect(background, p);
+                            icon = BitmapFactory.decodeResource(getResources(), R.drawable.ic_delete);
+                            RectF icon_dest = new RectF((float) itemView.getRight() - 2 * width, (float) itemView.getTop() + width, (float) itemView.getRight() - width, (float) itemView.getBottom() - width);
+                            c.drawBitmap(icon, null, icon_dest, p);
+                        }
                     }
                 }
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
@@ -190,7 +230,7 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
         final RecipeDatabase db = Room.databaseBuilder(getContext(), RecipeDatabase.class, "RecipeDB_V0.1")
                 .build();
 
-
+        singletonArray = RecipesSingleton.getInstance().getArray();
         LinearLayout ll = (LinearLayout) view.findViewById(R.id.linear_recipe_layout);
         //Set recycles layout height
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -200,7 +240,7 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
         int height = displayMetrics.heightPixels;
         Log.w("Statusbar ", String.valueOf(getStatusBarHeight()));
         int tempWidth = displayMetrics.widthPixels;
-        int tempHeight = height - 2 * (int) convertDpToPx(56) - getStatusBarHeight();
+        final int tempHeight = height - 2 * (int) convertDpToPx(56) - getStatusBarHeight();
 //        ll.getLayoutParams().width = temp + convertDpToPx(900);
         ll.setLayoutParams(new FrameLayout.LayoutParams(tempWidth,tempHeight));
 
@@ -216,8 +256,12 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
             e.printStackTrace();
         }
 
-        Log.w("Test_recipes", recipes.get(0).getRecipeName());
 
+        for (Recipe item : singletonArray) {
+            if (!recipes.contains(item)) {
+                recipes.add(item);
+            }
+        }
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerviewAdapter);
         adapter = new RecipeAdapter(getActivity(), recipes);
@@ -227,6 +271,8 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
             @Override
             public void onParentExpanded(int parentPosition) {
                 Recipe expandedRecipe = recipes.get(parentPosition);
+                tempParentPosition = parentPosition;
+                tempCollapsed = true;
 
             }
 
@@ -234,9 +280,12 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
             @Override
             public void onParentCollapsed(int parentPosition) {
                 Recipe collapsedRecipe = recipes.get(parentPosition);
-
+                tempCollapsed = false;
             }
+
         });
+
+
 
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getActivity().getApplicationContext(), LinearLayoutManager.VERTICAL, false);
 
@@ -263,6 +312,36 @@ public class RecipeFragment extends Fragment implements View.OnClickListener {
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.menu_main, menu);
         super.onCreateOptionsMenu(menu, inflater);
+
+        SearchManager searchManager = (SearchManager) getActivity().getSystemService(Context.SEARCH_SERVICE);
+        searchView = (SearchView) menu.findItem(R.id.search)
+                .getActionView();
+        searchView.setSearchableInfo(searchManager
+                .getSearchableInfo(getActivity().getComponentName()));
+        searchView.setMaxWidth(Integer.MAX_VALUE);
+//        searchView.setSubmitButtonEnabled(true);
+        EditText txtSearch = ((EditText) searchView.findViewById(android.support.v7.appcompat.R.id.search_src_text));
+        txtSearch.setHint("Поиск..");
+        txtSearch.setHintTextColor(getResources().getColor(R.color.red_black_Statusbar));
+        txtSearch.setTextColor(getResources().getColor(R.color.red_black));
+
+
+        // listening to search query text change
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                // filter recycler view when query submitted
+                adapter.getFilter().filter(query);
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String query) {
+                // filter recycler view when text is changed
+                adapter.getFilter().filter(query);
+                return false;
+            }
+        });
     }
 
     @Override

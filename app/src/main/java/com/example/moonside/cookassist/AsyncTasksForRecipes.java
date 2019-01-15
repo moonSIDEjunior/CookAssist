@@ -92,7 +92,7 @@ public class AsyncTasksForRecipes {
 
     }
 
-    public static class deleteAsyncTask extends AsyncTask<Recipe , Void, Void> {
+    public static class deleteAsyncTask extends AsyncTask<String , Void, Void> {
 
         private RecipeDao mAsyncTaskDao;
 
@@ -106,8 +106,8 @@ public class AsyncTasksForRecipes {
         }
 
         @Override
-        protected Void doInBackground(Recipe... recipe) {
-            mAsyncTaskDao.delete(recipe);
+        protected Void doInBackground(String... recipe) {
+            mAsyncTaskDao.deleteByName(recipe);
             return null;
         }
 

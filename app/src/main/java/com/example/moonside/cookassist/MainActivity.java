@@ -22,6 +22,7 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
@@ -36,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
     ProductDao dao = null;
     AsyncTasks asyncTask = new AsyncTasks(dao);
     ArrayList<String> autoCompleteList;
+    List<Recipe> recipes_FJ;
+
 
 
     public static class GlobalVars
@@ -65,6 +68,17 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(appbar);
 //        appbar.setTitle(text);
 //        toolbar = getSupportActionBar();
+
+        asyncTask.PRJ = new AsyncTasks.parseRecipesJSON();
+        asyncTask.PRJ.execute(loadJSONFromAsset("recipesList"));
+        try {
+            recipes_FJ = asyncTask.PRJ.get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        RecipesSingleton.getInstance().setList(recipes_FJ);
 
         asyncTask.PJS = new AsyncTasks.parseJSON();
         asyncTask.PJS.execute(loadJSONFromAsset("productCaloriesList"));
